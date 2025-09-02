@@ -53,7 +53,7 @@ export class UserService {
     });
   }
 
-  async findById(id: number): Promise<User | null> {
+  async findById(id: string): Promise<User | null> {
     return this.userRepository.findOne({
       where: { id },
       relations: ['roles', 'roles.permissions'],
@@ -75,7 +75,7 @@ export class UserService {
   }
 
   async updateEmailVerification(
-    userId: number,
+    userId: string,
     isVerified: boolean,
     token?: string,
   ): Promise<void> {
@@ -86,7 +86,7 @@ export class UserService {
   }
 
   async updateEmailVerificationToken(
-    userId: number,
+    userId: string,
     token: string,
   ): Promise<void> {
     await this.userRepository.update(userId, {
@@ -95,7 +95,7 @@ export class UserService {
   }
 
   async updateResetPasswordToken(
-    userId: number,
+    userId: string,
     token: string,
     expiresAt: Date,
   ): Promise<void> {
@@ -105,7 +105,7 @@ export class UserService {
     });
   }
 
-  async updatePassword(userId: number, hashedPassword: string): Promise<void> {
+  async updatePassword(userId: string, hashedPassword: string): Promise<void> {
     await this.userRepository.update(userId, {
       password: hashedPassword,
       resetPasswordToken: undefined,
@@ -113,7 +113,7 @@ export class UserService {
     });
   }
 
-  async assignRole(userId: number, roleName: string): Promise<User> {
+  async assignRole(userId: string, roleName: string): Promise<User> {
     const user = await this.findById(userId);
     if (!user) {
       throw new NotFoundException('User not found');
@@ -136,7 +136,7 @@ export class UserService {
     return user;
   }
 
-  async removeRole(userId: number, roleName: string): Promise<User> {
+  async removeRole(userId: string, roleName: string): Promise<User> {
     const user = await this.findById(userId);
     if (!user) {
       throw new NotFoundException('User not found');

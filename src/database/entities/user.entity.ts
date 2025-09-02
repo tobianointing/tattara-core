@@ -1,21 +1,23 @@
+import * as bcrypt from 'bcryptjs';
+import { Exclude } from 'class-transformer';
 import {
-  Entity,
-  PrimaryGeneratedColumn,
+  BeforeInsert,
   Column,
   CreateDateColumn,
-  UpdateDateColumn,
-  ManyToMany,
+  Entity,
+  JoinColumn,
   JoinTable,
-  BeforeInsert,
+  ManyToMany,
+  ManyToOne,
+  PrimaryGeneratedColumn,
+  UpdateDateColumn,
 } from 'typeorm';
-import { Exclude } from 'class-transformer';
-import * as bcrypt from 'bcryptjs';
 import { Role } from './role.entity';
 
 @Entity('users')
 export class User {
-  @PrimaryGeneratedColumn()
-  id: number;
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
 
   @Column({ unique: true })
   email: string;
@@ -58,6 +60,13 @@ export class User {
 
   @UpdateDateColumn()
   updatedAt: Date;
+
+  @ManyToOne(() => User, { nullable: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'created_by' })
+  createdBy: User;
+
+  @Column({ type: 'uuid', nullable: true })
+  created_by: string;
 
   @BeforeInsert()
   async hashPassword() {
