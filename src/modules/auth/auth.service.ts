@@ -1,19 +1,19 @@
+import { InjectQueue } from '@nestjs/bull';
 import {
-  Injectable,
   BadRequestException,
-  UnauthorizedException,
   ConflictException,
-  NotFoundException,
+  Injectable,
   Logger,
+  NotFoundException,
+  UnauthorizedException,
 } from '@nestjs/common';
-import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
+import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';
+import type { Queue } from 'bull';
 import * as crypto from 'crypto';
-import { UserService } from '../user/user.service';
-import { MailService } from '../mail/mail.service';
-import { ResendVerificationDto } from './dto/resend-verification.dto';
 import { User } from 'src/database/entities';
+import { UserService } from '../user/user.service';
 import {
   ForgotPasswordDto,
   LoginDto,
@@ -21,6 +21,7 @@ import {
   ResetPasswordDto,
   VerifyEmailDto,
 } from './dto';
+import { ResendVerificationDto } from './dto/resend-verification.dto';
 
 @Injectable()
 export class AuthService {
@@ -30,7 +31,7 @@ export class AuthService {
     private userService: UserService,
     private jwtService: JwtService,
     private configService: ConfigService,
-    private mailService: MailService,
+    @InjectQueue('mail') private mailQueue: Queue,
   ) {}
 
   async register(registerDto: RegisterDto) {
@@ -45,10 +46,23 @@ export class AuthService {
 
       const user = await this.userService.create(userData);
 
-      await this.mailService.sendEmailVerification(
-        user.email,
-        user.firstName,
-        emailVerificationToken,
+      const frontendUrl = this.configService.get<string>('app.frontendUrl');
+      const verificationUrl = `${frontendUrl}/auth/verify-email?token=${emailVerificationToken}`;
+
+      await this.mailQueue.add(
+        'sendEmail',
+        {
+          to: user.email,
+          subject: 'Verify your account',
+          template: 'email-verification',
+          context: { firstName: user.firstName, verificationUrl },
+        },
+        {
+          attempts: 3,
+          backoff: 5000,
+          removeOnComplete: true,
+          removeOnFail: false,
+        },
       );
 
       return {
@@ -57,14 +71,6 @@ export class AuthService {
         userId: user.id,
       };
     } catch (error) {
-      try {
-        await this.userService.deleteByEmail(registerDto.email);
-      } catch (deleteError) {
-        this.logger.error(
-          'Failed to cleanup user after email failure:',
-          deleteError,
-        );
-      }
       if (error instanceof ConflictException) {
         throw error;
       }
@@ -74,6 +80,12 @@ export class AuthService {
 
   async login(loginDto: LoginDto) {
     const user = await this.validateUser(loginDto.email, loginDto.password);
+
+    if (user.forcePasswordReset) {
+      throw new UnauthorizedException(
+        'Please reset your password before logging in',
+      );
+    }
 
     if (!user.isEmailVerified) {
       throw new UnauthorizedException(
@@ -152,15 +164,29 @@ export class AuthService {
     }
 
     const emailVerificationToken = crypto.randomBytes(32).toString('hex');
+
     await this.userService.updateEmailVerificationToken(
       user.id,
       emailVerificationToken,
     );
 
-    await this.mailService.sendEmailVerification(
-      user.email,
-      user.firstName,
-      emailVerificationToken,
+    const frontendUrl = this.configService.get<string>('app.frontendUrl');
+    const verificationUrl = `${frontendUrl}/auth/verify-email?token=${emailVerificationToken}`;
+
+    await this.mailQueue.add(
+      'sendEmail',
+      {
+        to: user.email,
+        subject: 'Verify your account',
+        template: 'email-verification',
+        context: { firstName: user.firstName, verificationUrl },
+      },
+      {
+        attempts: 3,
+        backoff: 5000,
+        removeOnComplete: true,
+        removeOnFail: false,
+      },
     );
 
     return {
@@ -179,6 +205,7 @@ export class AuthService {
     }
 
     const resetToken = crypto.randomBytes(32).toString('hex');
+
     const resetExpires = new Date(
       Date.now() +
         (this.configService.get<number>(
@@ -192,10 +219,24 @@ export class AuthService {
       resetExpires,
     );
 
-    await this.mailService.sendPasswordReset(
-      user.email,
-      user.firstName,
-      resetToken,
+    const frontendUrl = this.configService.get<string>('app.frontendUrl');
+
+    const resetUrl = `${frontendUrl}/auth/reset-password?token=${resetToken}`;
+
+    await this.mailQueue.add(
+      'sendEmail',
+      {
+        to: user.email,
+        subject: 'Reset Your Password',
+        template: 'password-reset',
+        context: { firstName: user.firstName, resetUrl },
+      },
+      {
+        attempts: 3,
+        backoff: 5000,
+        removeOnComplete: true,
+        removeOnFail: false,
+      },
     );
 
     return {

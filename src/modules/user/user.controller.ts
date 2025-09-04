@@ -5,11 +5,16 @@ import {
   ParseIntPipe,
   Post,
   Query,
+  UploadedFile,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { CurrentUser, RequirePermissions, Roles } from 'src/common/decorators';
 import { PermissionsGuard, RolesGuard } from 'src/common/guards';
+import { CsvUsersValidationPipe } from 'src/common/pipes';
 import { User } from 'src/database/entities';
+import { RegisterDto } from '../auth/dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { UserService } from './user.service';
 
@@ -104,6 +109,20 @@ export class UserController {
           action: p.action,
         })) || [],
     }));
+  }
+
+  @Post('bulk/create')
+  @UseInterceptors(FileInterceptor('file'))
+  @Roles('admin')
+  @RequirePermissions('user:write')
+  async bulkCreate(
+    @UploadedFile(CsvUsersValidationPipe) userBatch: { users: RegisterDto[] },
+    @CurrentUser() admin: User,
+  ) {
+    await this.userService.bulkCreate(admin, userBatch.users);
+    return {
+      message: `Users successfully created`,
+    };
   }
 
   @Get('permissions')

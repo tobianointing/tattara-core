@@ -5,10 +5,10 @@ import {
   Column,
   CreateDateColumn,
   Entity,
-  JoinColumn,
   JoinTable,
   ManyToMany,
   ManyToOne,
+  OneToMany,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
@@ -47,6 +47,9 @@ export class User {
   @Exclude()
   resetPasswordExpires: Date;
 
+  @Column({ default: false })
+  forcePasswordReset: boolean;
+
   @ManyToMany(() => Role, role => role.users, { eager: true })
   @JoinTable({
     name: 'user_roles',
@@ -55,18 +58,26 @@ export class User {
   })
   roles: Role[];
 
+  @Column({ default: false })
+  isFirstLogin: boolean;
+
+  @Column({ nullable: true })
+  lastLoginAt: Date;
+
+  @ManyToOne(() => User, user => user.createdUsers, {
+    nullable: true,
+    onDelete: 'SET NULL',
+  })
+  createdBy?: User;
+
+  @OneToMany(() => User, user => user.createdBy)
+  createdUsers: User[];
+
   @CreateDateColumn()
   createdAt: Date;
 
   @UpdateDateColumn()
   updatedAt: Date;
-
-  @ManyToOne(() => User, { nullable: true, onDelete: 'SET NULL' })
-  @JoinColumn({ name: 'created_by' })
-  createdBy: User;
-
-  @Column({ type: 'uuid', nullable: true })
-  created_by: string;
 
   @BeforeInsert()
   async hashPassword() {
