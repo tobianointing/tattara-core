@@ -1,11 +1,16 @@
+import { InjectQueue } from '@nestjs/bull';
 import {
+  BadRequestException,
+  ConflictException,
   Injectable,
   NotFoundException,
-  ConflictException,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
-import { User, Role, Permission } from 'src/database/entities';
-import { In, Repository } from 'typeorm';
+import type { Queue } from 'bull';
+import * as crypto from 'crypto';
+import { Permission, Role, User } from 'src/database/entities';
+import { DataSource, In, Repository } from 'typeorm';
 
 @Injectable()
 export class UserService {
@@ -16,6 +21,9 @@ export class UserService {
     private roleRepository: Repository<Role>,
     @InjectRepository(Permission)
     private permissionRepository: Repository<Permission>,
+    private dataSource: DataSource,
+    @InjectQueue('mail') private mailQueue: Queue,
+    private configService: ConfigService,
   ) {}
 
   async create(userData: Partial<User>): Promise<User> {
@@ -39,6 +47,86 @@ export class UserService {
     return this.userRepository.save(user);
   }
 
+  async bulkCreate(createdBy: User, usersData: Partial<User>[]) {
+    const emails = usersData.map(u => u.email);
+
+    const existing = await this.userRepository.find({
+      where: { email: In(emails) },
+    });
+
+    if (existing.length > 0) {
+      throw new BadRequestException({
+        message: 'Some emails are already in use',
+        errors: { existingEmails: existing.map(u => u.email) },
+      });
+    }
+
+    const queryRunner = this.dataSource.createQueryRunner();
+
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+    try {
+      const userRole = await this.roleRepository.findOne({
+        where: { name: 'user' },
+      });
+
+      for (const userData of usersData) {
+        const user = new User();
+
+        const resetToken = crypto.randomBytes(32).toString('hex');
+
+        const resetExpires = new Date(
+          Date.now() +
+            (this.configService.get<number>(
+              'app.passwordResetExpiresIn',
+            ) as number),
+        );
+
+        user.firstName = userData.firstName as string;
+        user.lastName = userData.lastName as string;
+        user.email = userData.email as string;
+        user.password = userData.password ?? 'DefaultPassword12';
+        user.createdBy = createdBy;
+        user.forcePasswordReset = true;
+        user.roles = userRole ? [userRole] : [];
+        user.resetPasswordToken = resetToken;
+        user.resetPasswordExpires = resetExpires;
+
+        await queryRunner.manager.save(user);
+
+        const frontendUrl = this.configService.get<string>('app.frontendUrl');
+
+        await this.mailQueue.add(
+          'sendEmail',
+          {
+            to: user.email,
+            subject: 'Reset your password',
+            template: 'bulk-creation-user-password-reset',
+            context: {
+              firstName: user.firstName,
+              email: user.email,
+              appName: this.configService.get<string>('app.name'),
+              resetUrl: `${frontendUrl}/auth/reset-password?token=${resetToken}`,
+            },
+          },
+          {
+            attempts: 3,
+            backoff: 5000,
+            removeOnComplete: true,
+            removeOnFail: false,
+          },
+        );
+      }
+
+      await queryRunner.commitTransaction();
+    } catch (err) {
+      await queryRunner.rollbackTransaction();
+      throw err;
+    } finally {
+      await queryRunner.release();
+    }
+  }
+
   // tread carefully
   async deleteByEmail(email: string) {
     return await this.userRepository.delete({
@@ -53,7 +141,7 @@ export class UserService {
     });
   }
 
-  async findById(id: number): Promise<User | null> {
+  async findById(id: string): Promise<User | null> {
     return this.userRepository.findOne({
       where: { id },
       relations: ['roles', 'roles.permissions'],
@@ -75,7 +163,7 @@ export class UserService {
   }
 
   async updateEmailVerification(
-    userId: number,
+    userId: string,
     isVerified: boolean,
     token?: string,
   ): Promise<void> {
@@ -86,7 +174,7 @@ export class UserService {
   }
 
   async updateEmailVerificationToken(
-    userId: number,
+    userId: string,
     token: string,
   ): Promise<void> {
     await this.userRepository.update(userId, {
@@ -95,7 +183,7 @@ export class UserService {
   }
 
   async updateResetPasswordToken(
-    userId: number,
+    userId: string,
     token: string,
     expiresAt: Date,
   ): Promise<void> {
@@ -105,15 +193,22 @@ export class UserService {
     });
   }
 
-  async updatePassword(userId: number, hashedPassword: string): Promise<void> {
-    await this.userRepository.update(userId, {
-      password: hashedPassword,
-      resetPasswordToken: undefined,
-      resetPasswordExpires: undefined,
-    });
+  async updatePassword(userId: string, hashedPassword: string): Promise<void> {
+    await this.userRepository
+      .createQueryBuilder()
+      .update(User)
+      .set({
+        password: hashedPassword,
+        resetPasswordToken: () => 'NULL',
+        resetPasswordExpires: () => 'NULL',
+        forcePasswordReset: false,
+        isEmailVerified: true,
+      })
+      .where('id = :userId', { userId })
+      .execute();
   }
 
-  async assignRole(userId: number, roleName: string): Promise<User> {
+  async assignRole(userId: string, roleName: string): Promise<User> {
     const user = await this.findById(userId);
     if (!user) {
       throw new NotFoundException('User not found');
@@ -136,7 +231,7 @@ export class UserService {
     return user;
   }
 
-  async removeRole(userId: number, roleName: string): Promise<User> {
+  async removeRole(userId: string, roleName: string): Promise<User> {
     const user = await this.findById(userId);
     if (!user) {
       throw new NotFoundException('User not found');

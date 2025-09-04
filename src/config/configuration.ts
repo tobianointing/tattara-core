@@ -15,7 +15,13 @@ export default () => ({
     fromEmail: process.env.FROM_EMAIL ?? 'noreply@example.com',
     resendApiKey: process.env.RESEND_API_KEY ?? '',
   },
+  redis: {
+    host: process.env.REDIS_HOST,
+    port: process.env.REDIS_PORT,
+    password: process.env.REDIS_PASSWORD,
+  },
   app: {
+    name: process.env.APP_NAME,
     frontendUrl: process.env.FRONTEND_URL ?? 'http://localhost:3000',
     emailVerificationExpiresIn: parseInt(
       process.env.EMAIL_VERIFICATION_EXPIRES_IN ?? '86400000',

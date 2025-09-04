@@ -1,21 +1,23 @@
+import * as bcrypt from 'bcryptjs';
+import { Exclude } from 'class-transformer';
 import {
-  Entity,
-  PrimaryGeneratedColumn,
+  BeforeInsert,
   Column,
   CreateDateColumn,
-  UpdateDateColumn,
-  ManyToMany,
+  Entity,
   JoinTable,
-  BeforeInsert,
+  ManyToMany,
+  ManyToOne,
+  OneToMany,
+  PrimaryGeneratedColumn,
+  UpdateDateColumn,
 } from 'typeorm';
-import { Exclude } from 'class-transformer';
-import * as bcrypt from 'bcryptjs';
 import { Role } from './role.entity';
 
 @Entity('users')
 export class User {
-  @PrimaryGeneratedColumn()
-  id: number;
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
 
   @Column({ unique: true })
   email: string;
@@ -45,6 +47,9 @@ export class User {
   @Exclude()
   resetPasswordExpires: Date;
 
+  @Column({ default: false })
+  forcePasswordReset: boolean;
+
   @ManyToMany(() => Role, role => role.users, { eager: true })
   @JoinTable({
     name: 'user_roles',
@@ -52,6 +57,21 @@ export class User {
     inverseJoinColumn: { name: 'role_id', referencedColumnName: 'id' },
   })
   roles: Role[];
+
+  @Column({ default: false })
+  isFirstLogin: boolean;
+
+  @Column({ nullable: true })
+  lastLoginAt: Date;
+
+  @ManyToOne(() => User, user => user.createdUsers, {
+    nullable: true,
+    onDelete: 'SET NULL',
+  })
+  createdBy?: User;
+
+  @OneToMany(() => User, user => user.createdBy)
+  createdUsers: User[];
 
   @CreateDateColumn()
   createdAt: Date;

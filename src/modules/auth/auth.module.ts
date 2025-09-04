@@ -1,17 +1,16 @@
 import { Module } from '@nestjs/common';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
-import { ConfigModule, ConfigService } from '@nestjs/config';
-import { AuthService } from './auth.service';
-import { AuthController } from './auth.controller';
-import { JwtStrategy } from './strategies/jwt.strategy';
+import { QueueModule } from 'src/shared/queue/queue.module';
 import { UserModule } from '../user/user.module';
-import { MailModule } from '../mail/mail.module';
+import { AuthController } from './auth.controller';
+import { AuthService } from './auth.service';
+import { JwtStrategy } from './strategies/jwt.strategy';
 
 @Module({
   imports: [
     UserModule,
-    MailModule,
     PassportModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],
@@ -23,6 +22,7 @@ import { MailModule } from '../mail/mail.module';
       }),
       inject: [ConfigService],
     }),
+    QueueModule,
   ],
   providers: [AuthService, JwtStrategy],
   controllers: [AuthController],

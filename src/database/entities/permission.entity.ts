@@ -3,8 +3,8 @@ import { Role } from './role.entity';
 
 @Entity('permissions')
 export class Permission {
-  @PrimaryGeneratedColumn()
-  id: number;
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
 
   @Column({ unique: true })
   name: string;
@@ -13,10 +13,10 @@ export class Permission {
   description: string;
 
   @Column()
-  resource: string; // e.g., 'user', 'role', 'report'
+  resource: string;
 
   @Column()
-  action: string; // e.g., 'read', 'write', 'delete'
+  action: string;
 
   @ManyToMany(() => Role, role => role.permissions)
   roles: Role[];

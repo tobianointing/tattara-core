@@ -16,7 +16,8 @@ import { User, Role, Permission } from './entities';
         password: configService.get('database.password'),
         database: configService.get('database.database'),
         entities: [User, Role, Permission],
-        synchronize: true, // Set to false in production
+        migrations: ['src/database/migrations/*{.ts,.js}'], // Updated path
+        synchronize: false, // Set to false in production
         logging: false,
       }),
       inject: [ConfigService],
