@@ -1,8 +1,8 @@
 import { Injectable } from '@nestjs/common';
-import { FileStorageStrategy } from './interfaces/file-storage-strategy.interface';
-import { S3Strategy } from './strategies/s3.strategy';
-import { AzureBlobStrategy } from './strategies/azure-blob.strategy';
-import { LocalStorageStrategy } from './strategies/local-storage.strategy';
+import { FileStorageStrategy } from './interfaces';
+import { S3Strategy } from './strategies';
+import { AzureBlobStrategy } from './strategies';
+import { LocalStorageStrategy } from './strategies';
 
 @Injectable()
 export class FileManagerService {

@@ -1,4 +1,4 @@
-import { FileStorageStrategy } from '../interfaces/file-storage-strategy.interface';
+import { FileStorageStrategy } from '../interfaces';
 import { ConfigService } from '@nestjs/config';
 import { BlobServiceClient, BlockBlobClient } from '@azure/storage-blob';
 import { v4 as uuidv4 } from 'uuid';

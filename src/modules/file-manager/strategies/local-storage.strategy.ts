@@ -1,4 +1,4 @@
-import { FileStorageStrategy } from '../interfaces/file-storage-strategy.interface';
+import { FileStorageStrategy } from '../interfaces';
 import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';

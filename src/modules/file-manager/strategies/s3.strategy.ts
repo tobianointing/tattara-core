@@ -1,4 +1,4 @@
-import { FileStorageStrategy } from '../interfaces/file-storage-strategy.interface';
+import { FileStorageStrategy } from '../interfaces';
 import { InjectRepository } from '@nestjs/typeorm';
 import {
   S3Client,
