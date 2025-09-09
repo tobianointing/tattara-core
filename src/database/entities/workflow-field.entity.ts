@@ -1,49 +1,50 @@
-import { mode, WorkflowStatus } from 'src/common/enums';
+import { FieldType } from 'src/common/enums';
 import {
   Column,
   CreateDateColumn,
   Entity,
   JoinColumn,
   ManyToOne,
+  OneToMany,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
-import { Program } from './program.entity';
-import { Workflow } from './workflow.entity';
+import { Workflow } from '.';
+import { FieldMapping } from './field-mapping.entity';
 
 @Entity('workflow_fields')
-export class Workflows {
+export class WorkflowField {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @ManyToOne(() => Program, program => program.workflows)
-  @JoinColumn({ name: 'program_id' })
+  @ManyToOne(() => Workflow, workflow => workflow.workflowFields)
+  @JoinColumn({ name: 'workflow_id' })
   workflow: Workflow;
 
   @Column()
-  description: string;
+  fieldName: string;
+
+  @Column()
+  label: string;
 
   @Column({
     type: 'enum',
-    enum: WorkflowStatus,
-    default: WorkflowStatus.INACTIVE,
+    enum: FieldType,
+    default: FieldType.TEXT,
   })
-  status: WorkflowStatus;
+  fieldType: FieldType;
 
-  @Column({ type: 'array', default: [] })
-  supportedLanguages: string[];
+  @Column()
+  isRequired: boolean;
 
-  @Column({
-    type: 'enum',
-    enum: mode,
-    array: true,
-    default: [mode.TEXT],
-  })
-  enabledModes: mode[];
+  @Column({ type: 'jsonb', nullable: true })
+  validationRules: Record<string, any>;
 
-  @ManyToOne(() => Program, program => program.workflows)
-  @JoinColumn({ name: 'program_id' })
-  program: Program;
+  @Column({ type: 'jsonb' })
+  ai_mapping: Record<string, any>;
+
+  @Column()
+  displayOrder: number;
 
   @CreateDateColumn()
   createdAt: Date;
@@ -51,6 +52,6 @@ export class Workflows {
   @UpdateDateColumn()
   updatedAt: Date;
 
-  @Column({ default: 1 })
-  version: number;
+  @OneToMany(() => FieldMapping, fieldMapping => fieldMapping.workflowField)
+  fieldMappings: FieldMapping[];
 }

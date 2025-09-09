@@ -11,6 +11,7 @@ export default tseslint.config(
       'commitlint.config.mjs',
       'dist/',
       'node_modules/',
+      'ormconfig.js',
     ],
   },
   eslint.configs.recommended,

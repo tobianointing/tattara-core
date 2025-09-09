@@ -21,10 +21,10 @@
     "prepare": "husky",
     "format:check": "prettier --check \"src/**/*.ts\" \"test/**/*.ts\"",
     "typeorm": "typeorm-ts-node-commonjs",
-    "migration:generate": "pnpm run typeorm migration:generate -d src/database/data-source.ts",
-    "migration:create": "pnpm run typeorm migration:create",
-    "migration:run": "pnpm run typeorm migration:run -d src/database/data-source.ts",
-    "migration:revert": "pnpm run typeorm migration:revert -d src/database/data-source.ts"
+    "migration:generate": "pnpm run build && typeorm migration:generate -d ormconfig.js",
+    "migration:create": "typeorm migration:create",
+    "migration:run": "pnpm run build && typeorm migration:run -d ormconfig.js",
+    "migration:revert": "pnpm run build && typeorm migration:revert -d ormconfig.js"
   },
   "dependencies": {
     "@bull-board/api": "^6.12.7",

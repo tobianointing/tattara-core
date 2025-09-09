@@ -59,7 +59,7 @@ paths:
         '200':
           $ref: '#/components/responses/Success'
 
-  /admin/users:
+  /users:
     get:
       tags: [User Management]
       summary: List all users
@@ -87,7 +87,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/User'
 
-  /admin/programs:
+  /programs:
     get:
       tags: [Program Management]
       summary: List all programs (with optional pagination)
@@ -118,7 +118,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Program'
 
-  /admin/programs/{programId}:
+  /programs/{programId}:
     get:
       tags: [Program Management]
       summary: Get a specific program by its ID
@@ -198,7 +198,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
-  /admin/programs/{programId}/workflows:
+  /programs/{programId}/workflows:
     get:
       tags: [Program Management]
       summary: List all workflows assigned to a specific program
@@ -253,7 +253,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
-  /admin/workflows:
+  /workflows:
     get:
       tags: [Workflow Management]
       summary: List all workflows
@@ -283,7 +283,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Workflow'
 
-  /admin/workflows/{workflowId}/configurations:
+  /workflows/{workflowId}/configurations:
     get:
       tags: [Workflow Management]
       summary: Get all external configurations for a workflow
@@ -311,7 +311,7 @@ paths:
         '201':
           $ref: '#/components/responses/Success'
 
-  /admin/workflows/{workflowId}/fields:
+  /workflows/{workflowId}/fields:
     get:
       tags: [Workflow Management]
       summary: Get all fields for a workflow
@@ -339,7 +339,7 @@ paths:
         '201':
           $ref: '#/components/responses/Success'
 
-  /admin/workflows/{workflowId}/fields/{fieldId}/mapping:
+  /workflows/{workflowId}/fields/{fieldId}/mapping:
     put:
       tags: [Workflow Management]
       summary: Create or update field mapping for a workflow field
@@ -359,7 +359,7 @@ paths:
         '200':
           $ref: '#/components/responses/Success'
 
-  /collector/ai/process:
+  /ai/process:
     post:
       tags: [Data Collection]
       summary: Process audio or image via AI (Step 1 of 2)
@@ -390,7 +390,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/AIProcessResponse'
 
-  /collector/submit:
+  /submit:
     post:
       tags: [Data Collection]
       summary: Submit confirmed data (Step 2 of 2)
@@ -408,7 +408,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/DataSubmissionResponse'
 
-  /collector/sync:
+  /sync:
     post:
       tags: [Sync]
       summary: Initiate offline sync from a client device
@@ -426,7 +426,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/SyncResponse'
 
-  /collector/submissions:
+  /submissions:
     get:
       tags: [Data Collection]
       summary: Get user's submission history
@@ -440,7 +440,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/SubmissionListResponse'
 
-  /admin/export:
+  /export:
     post:
       tags: [Analytics & Export]
       summary: Export data
@@ -458,7 +458,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ExportResponse'
 
-  /admin/audit-logs:
+  /audit-logs:
     get:
       tags: [System Monitoring]
       summary: Get audit logs
