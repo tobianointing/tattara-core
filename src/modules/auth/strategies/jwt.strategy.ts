@@ -17,6 +17,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     });
   }
 
+  //TODO: implemnent caching approach to better optimize getting user data
   async validate(payload: { sub: string }) {
     const user = await this.userService.findById(payload.sub);
     if (!user) {

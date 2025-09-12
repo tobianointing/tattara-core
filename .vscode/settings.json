@@ -1,6 +1,13 @@
 {
   "dbmlERDPreviewer.preferredTheme": "dark",
-  "cSpell.words": ["DHIS", "ormconfig", "requirepass", "tattara", "varchar"],
+  "cSpell.words": [
+    "DHIS",
+    "implemnent",
+    "ormconfig",
+    "requirepass",
+    "tattara",
+    "varchar"
+  ],
   "github.copilot.chat.commitMessageGeneration.instructions": [
     { "text": "Use conventional commit format: type(scope): description." },
     {
