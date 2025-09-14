@@ -6,8 +6,8 @@ import { FileManagerService } from './file-manager.service';
 import { FileManagerController } from './file-manager.controller';
 
 import multer from 'multer';
-import { S3Strategy } from './strategies';
-import { AzureBlobStrategy } from './strategies';
+// import { S3Strategy } from './strategies';
+// import { AzureBlobStrategy } from './strategies';
 import { LocalStorageStrategy } from './strategies';
 
 @Module({
@@ -19,11 +19,15 @@ import { LocalStorageStrategy } from './strategies';
   ],
   providers: [
     FileManagerService,
-    S3Strategy,
-    AzureBlobStrategy,
+    // S3Strategy,
+    // AzureBlobStrategy,
     LocalStorageStrategy,
   ],
   controllers: [FileManagerController],
-  exports: [S3Strategy, AzureBlobStrategy, LocalStorageStrategy],
+  exports: [
+    // S3Strategy,
+    //  AzureBlobStrategy,
+    LocalStorageStrategy,
+  ],
 })
 export class FileManagerModule {}

@@ -12,6 +12,7 @@ import {
 import { Program } from './program.entity';
 import { WorkflowField } from './workflow-field.entity';
 import { FieldMapping } from './field-mapping.entity';
+import { WorkflowConfiguration } from './workflow-configuration.entity';
 
 @Entity('workflows')
 export class Workflow {
@@ -27,7 +28,7 @@ export class Workflow {
   @Column({
     type: 'enum',
     enum: WorkflowStatus,
-    default: WorkflowStatus.INACTIVE,
+    default: WorkflowStatus.ACTIVE,
   })
   status: WorkflowStatus;
 
@@ -42,22 +43,38 @@ export class Workflow {
   })
   enabledModes: Mode[];
 
-  @ManyToOne(() => Program, program => program.workflows)
+  @ManyToOne(() => Program, program => program.workflows, {
+    onDelete: 'SET NULL',
+    onUpdate: 'CASCADE',
+  })
   @JoinColumn({ name: 'program_id' })
   program: Program;
+
+  @OneToMany(() => WorkflowField, workflowField => workflowField.workflow, {
+    cascade: true,
+    eager: true,
+  })
+  workflowFields: WorkflowField[];
+
+  @OneToMany(() => FieldMapping, fieldMapping => fieldMapping.workflow, {
+    cascade: true,
+    eager: true,
+  })
+  fieldMappings: FieldMapping[];
+
+  @OneToMany(
+    () => WorkflowConfiguration,
+    workflowConfiguration => workflowConfiguration.workflow,
+    { cascade: true, eager: true },
+  )
+  workflowConfigurations: WorkflowConfiguration[];
+
+  @Column({ default: 1 })
+  version: number;
 
   @CreateDateColumn()
   createdAt: Date;
 
   @UpdateDateColumn()
   updatedAt: Date;
-
-  @Column({ default: 1 })
-  version: number;
-
-  @OneToMany(() => WorkflowField, workflowField => workflowField.workflow)
-  workflowFields: WorkflowField[];
-
-  @OneToMany(() => FieldMapping, fieldMapping => fieldMapping.workflow)
-  fieldMappings: FieldMapping[];
 }

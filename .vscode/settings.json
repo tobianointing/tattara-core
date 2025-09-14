@@ -6,6 +6,7 @@
     "ormconfig",
     "requirepass",
     "tattara",
+    "Upserted",
     "varchar"
   ],
   "github.copilot.chat.commitMessageGeneration.instructions": [

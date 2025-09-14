@@ -49,7 +49,7 @@ export class AuthService {
       const frontendUrl = this.configService.get<string>('app.frontendUrl');
       const verificationUrl = `${frontendUrl}/auth/verify-email?token=${emailVerificationToken}`;
 
-      this.mailQueue.add(
+      await this.mailQueue.add(
         'sendEmail',
         {
           to: user.email,

@@ -14,6 +14,7 @@ import { BullBoardModule } from '@bull-board/nestjs';
 import { ExpressAdapter } from '@bull-board/express';
 import basicAuth from 'express-basic-auth';
 import { BullModule } from '@nestjs/bull';
+import { WorkflowModule } from './modules/workflow/workflow.module';
 
 @Module({
   imports: [
@@ -47,6 +48,7 @@ import { BullModule } from '@nestjs/bull';
         users: { admin: 'tattara' },
       }),
     }),
+    WorkflowModule,
   ],
   providers: [
     {

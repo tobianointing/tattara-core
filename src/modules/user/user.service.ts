@@ -261,7 +261,6 @@ export class UserService {
     return { users, total };
   }
 
-  // Role and Permission management methods
   async createRole(
     name: string,
     description: string,

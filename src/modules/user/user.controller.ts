@@ -78,7 +78,7 @@ export class UserController {
   @Roles('admin')
   @RequirePermissions('user:write')
   async assignRole(
-    @Param('id', ParseIntPipe) userId: string,
+    @Param('id') userId: string,
     @Param('roleName') roleName: string,
   ) {
     const user = await this.userService.assignRole(userId, roleName);

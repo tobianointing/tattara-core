@@ -11,6 +11,7 @@ import {
   FieldMapping,
   FileUploads,
   WorkflowField,
+  WorkflowConfiguration,
 } from './entities';
 import { SnakeNamingStrategy } from 'typeorm-naming-strategies';
 
@@ -34,6 +35,9 @@ import { SnakeNamingStrategy } from 'typeorm-naming-strategies';
           WorkflowField,
           FieldMapping,
           FileUploads,
+          WorkflowField,
+          FieldMapping,
+          WorkflowConfiguration,
         ],
         synchronize: false,
         logging: false,

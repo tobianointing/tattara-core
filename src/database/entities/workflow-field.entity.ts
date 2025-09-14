@@ -17,7 +17,10 @@ export class WorkflowField {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @ManyToOne(() => Workflow, workflow => workflow.workflowFields)
+  @ManyToOne(() => Workflow, workflow => workflow.workflowFields, {
+    onDelete: 'CASCADE',
+    onUpdate: 'CASCADE',
+  })
   @JoinColumn({ name: 'workflow_id' })
   workflow: Workflow;
 
@@ -34,14 +37,14 @@ export class WorkflowField {
   })
   fieldType: FieldType;
 
-  @Column()
+  @Column({ default: false })
   isRequired: boolean;
 
   @Column({ type: 'jsonb', nullable: true })
   validationRules: Record<string, any>;
 
-  @Column({ type: 'jsonb' })
-  ai_mapping: Record<string, any>;
+  @Column({ type: 'jsonb', nullable: true })
+  aiMapping: Record<string, any>;
 
   @Column()
   displayOrder: number;
@@ -52,6 +55,8 @@ export class WorkflowField {
   @UpdateDateColumn()
   updatedAt: Date;
 
-  @OneToMany(() => FieldMapping, fieldMapping => fieldMapping.workflowField)
+  @OneToMany(() => FieldMapping, fieldMapping => fieldMapping.workflowField, {
+    cascade: true,
+  })
   fieldMappings: FieldMapping[];
 }
