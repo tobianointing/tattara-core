@@ -9,6 +9,8 @@ import { DatabaseModule } from './database/database.module';
 import { JwtAuthGuard } from './modules/auth/guards/jwt-auth.guard';
 import { QueueModule } from './shared/queue/queue.module';
 import { ProgramModule } from './modules/program/program.module';
+import { Dhis2ConnectorModule } from './integration/dhis2-connector/dhis2-connector.module';
+import { GenericDbConnectorModule } from './integration/generic-db-connector/generic-db-connector.module';
 import configuration from './config/configuration';
 import { BullBoardModule } from '@bull-board/nestjs';
 import { ExpressAdapter } from '@bull-board/express';
@@ -27,6 +29,8 @@ import { BullModule } from '@nestjs/bull';
     MailModule,
     FileManagerModule,
     ProgramModule,
+    Dhis2ConnectorModule,
+    GenericDbConnectorModule,
     QueueModule,
     BullModule.forRootAsync({
       imports: [ConfigModule],
