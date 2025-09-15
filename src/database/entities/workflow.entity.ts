@@ -4,6 +4,7 @@ import {
   CreateDateColumn,
   Entity,
   JoinColumn,
+  ManyToMany,
   ManyToOne,
   OneToMany,
   PrimaryGeneratedColumn,
@@ -13,6 +14,7 @@ import { Program } from './program.entity';
 import { WorkflowField } from './workflow-field.entity';
 import { FieldMapping } from './field-mapping.entity';
 import { WorkflowConfiguration } from './workflow-configuration.entity';
+import { User } from './user.entity';
 
 @Entity('workflows')
 export class Workflow {
@@ -68,6 +70,9 @@ export class Workflow {
     { cascade: true, eager: true },
   )
   workflowConfigurations: WorkflowConfiguration[];
+
+  @ManyToMany(() => User, user => user.workflows)
+  users: User[];
 
   @Column({ default: 1 })
   version: number;

@@ -11,6 +11,7 @@ import {
 } from '@nestjs/common';
 import { Roles } from 'src/common/decorators';
 import { CreateWorkflowDto, UpdateWorkflowBasicDto } from '../dto';
+import { AssignUsersDto } from '../dto/assign-users.dto';
 import { WorkflowService } from '../services/workflow.service';
 
 @Controller('workflows')
@@ -68,5 +69,14 @@ export class WorkflowController {
   @Roles('admin')
   async createWorkflow(@Body() createWorkflowDto: CreateWorkflowDto) {
     return this.workflowService.createWorkflow(createWorkflowDto);
+  }
+
+  @Post('/:workflowId/users')
+  @Roles('admin')
+  async assignUsersToWorkflow(
+    @Param('workflowId', new ParseUUIDPipe()) workflowId: string,
+    @Body() dto: AssignUsersDto,
+  ) {
+    return this.workflowService.assignUsersToWorkflow(workflowId, dto.userIds);
   }
 }

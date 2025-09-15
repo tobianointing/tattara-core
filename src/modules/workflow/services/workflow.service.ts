@@ -10,8 +10,8 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { WorkflowStatus } from 'src/common/enums';
 import { PaginationResult } from 'src/common/interfaces';
-import { Workflow } from 'src/database/entities';
-import { DataSource, ILike, Repository } from 'typeorm';
+import { Program, User, Workflow } from 'src/database/entities';
+import { DataSource, ILike, In, QueryFailedError, Repository } from 'typeorm';
 import { CreateWorkflowDto, UpdateWorkflowBasicDto } from '../dto';
 
 @Injectable()
@@ -27,10 +27,32 @@ export class WorkflowService {
   async createWorkflow(workflowData: CreateWorkflowDto): Promise<Workflow> {
     return this.dataSource.transaction(async manager => {
       try {
-        const workflow = manager.create(Workflow, workflowData);
+        const { programId, ...data } = workflowData;
+
+        const workflow = manager.create(Workflow, {
+          ...data,
+        });
+
+        if (programId) {
+          const program = await manager.findOne(Program, {
+            where: { id: programId },
+          });
+
+          if (!program) {
+            throw new NotFoundException(
+              `Program with ID '${programId}' not found`,
+            );
+          }
+
+          workflow.program = program;
+        }
+
         return await manager.save(workflow);
       } catch (error) {
-        if (error.code === '23505') {
+        if (
+          error instanceof QueryFailedError &&
+          (error as any).code === '23505'
+        ) {
           this.logger.warn(
             `Workflow creation failed - name already exists: ${workflowData.name}`,
           );
@@ -159,5 +181,38 @@ export class WorkflowService {
     }
 
     this.logger.log(`Workflow '${workflowId}' archived successfully`);
+  }
+
+  async assignUsersToWorkflow(
+    workflowId: string,
+    userIds: string[],
+  ): Promise<Workflow> {
+    return this.dataSource.transaction(async manager => {
+      const workflow = await manager.findOne(Workflow, {
+        where: { id: workflowId },
+        relations: ['users'],
+        select: ['id', 'users'],
+      });
+
+      if (!workflow) {
+        throw new NotFoundException(
+          `Workflow with ID '${workflowId}' not found`,
+        );
+      }
+
+      const users = await manager.findBy(User, { id: In(userIds) });
+
+      if (users.length !== userIds.length) {
+        const foundUserIds = users.map(user => user.id);
+        const nonExistentIds = userIds.filter(id => !foundUserIds.includes(id));
+        throw new NotFoundException(
+          `User(s) with ID(s) '${nonExistentIds.join(', ')}' not found`,
+        );
+      }
+
+      workflow.users = users;
+
+      return await manager.save(workflow);
+    });
   }
 }

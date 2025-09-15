@@ -5,12 +5,17 @@ import {
   IsNotEmpty,
   IsOptional,
   IsString,
+  IsUUID,
   ValidateNested,
 } from 'class-validator';
 import { Mode } from 'src/common/enums';
 import { CreateWorkflowConfigurationDto, CreateWorkflowFieldDto } from '.';
 
 export class CreateWorkflowDto {
+  @IsUUID()
+  @IsOptional()
+  programId?: string;
+
   @IsString()
   @IsNotEmpty()
   name: string;

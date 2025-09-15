@@ -1,4 +1,5 @@
 import {
+  IsArray,
   IsBoolean,
   IsEnum,
   IsNotEmpty,
@@ -21,6 +22,11 @@ export class CreateWorkflowFieldDto {
   @IsEnum(FieldType)
   @IsNotEmpty()
   fieldType: FieldType;
+
+  @IsArray()
+  @IsString({ each: true })
+  @IsOptional()
+  options?: string[];
 
   @IsBoolean()
   @IsOptional()

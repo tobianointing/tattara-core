@@ -37,6 +37,9 @@ export class WorkflowField {
   })
   fieldType: FieldType;
 
+  @Column({ type: 'text', array: true, nullable: true })
+  options?: string[];
+
   @Column({ default: false })
   isRequired: boolean;
 

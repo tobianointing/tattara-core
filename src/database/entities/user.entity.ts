@@ -13,6 +13,7 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 import { Role } from './role.entity';
+import { Workflow } from './workflow.entity';
 
 @Entity('users')
 export class User {
@@ -57,6 +58,14 @@ export class User {
     inverseJoinColumn: { name: 'role_id', referencedColumnName: 'id' },
   })
   roles: Role[];
+
+  @ManyToMany(() => Workflow, workflow => workflow.users, { eager: true })
+  @JoinTable({
+    name: 'user_workflow_assignments',
+    joinColumn: { name: 'user_id', referencedColumnName: 'id' },
+    inverseJoinColumn: { name: 'workflow_id', referencedColumnName: 'id' },
+  })
+  workflows: Workflow[];
 
   @Column({ default: false })
   isFirstLogin: boolean;
