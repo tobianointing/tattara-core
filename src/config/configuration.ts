@@ -42,17 +42,4 @@ export default () => ({
     connectionString: process.env.AZURE_STORAGE_CONNECTION_STRING ?? '',
     container: process.env.AZURE_BLOB_CONTAINER ?? 'tattara-container',
   },
-  dhis2: {
-    baseUrl: process.env.DHIS2_BASE_URL ?? '',
-    username: process.env.DHIS2_USERNAME ?? '',
-    password: process.env.DHIS2_PASSWORD ?? '',
-  },
-  generic_db: {
-    type: process.env.GENERIC_DB_TYPE ?? 'postgres',
-    host: process.env.GENERIC_DB_HOST ?? 'Localhost',
-    port: parseInt(process.env.GENERIC_DB_PORT ?? '5432', 10),
-    username: process.env.GENERIC_DB_USERNAME ?? 'postgres',
-    password: process.env.GENERIC_DB_PASSWORD ?? '',
-    database: process.env.GENERIC_DB_NAME ?? 'generic_db',
-  },
 });

@@ -1,39 +1,51 @@
-import { ConnectionType } from "src/common/enums";
-import { Column, CreateDateColumn, UpdateDateColumn, Entity, PrimaryGeneratedColumn, ManyToOne, JoinColumn } from "typeorm";
-import { User } from "./user.entity";
-import type { ConnectionConfig } from "src/integration/interfaces/connection-config.interface";
-
+import { IntegrationType } from 'src/common/enums';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+  UpdateDateColumn,
+  ManyToOne,
+  JoinColumn,
+} from 'typeorm';
+import { User } from '.';
+import type { ExternalConnectionConfiguration } from 'src/integration/interfaces/connection-config.interface';
 
 @Entity('external_connections')
 export class ExternalConnection {
-    @PrimaryGeneratedColumn('uuid')
-    id: string;
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
 
-    @Column()
-    name: string;
-    
-    @Column()
-    type: ConnectionType;
+  @Column({ type: 'varchar', length: 255 })
+  name: string;
 
-    @Column('jsonb')
-    configuration: ConnectionConfig;
+  @Column({ type: 'enum', enum: IntegrationType })
+  type: IntegrationType;
 
-    @Column()
-    isActive: boolean;
+  @Column({ type: 'jsonb' })
+  configuration: ExternalConnectionConfiguration;
 
-    @Column()
-    lastTestedAt: Date;
+  @Column({ type: 'boolean', default: true })
+  isActive: boolean;
 
-    @Column('jsonb', { nullable: true })
-    testResults: any;
+  @Column({ type: 'timestamp', nullable: true })
+  lastTestedAt?: Date;
 
-    @CreateDateColumn()
-    createdAt: Date;
+  @Column({ type: 'jsonb', nullable: true })
+  testResult?: Record<string, any>;
 
-    @UpdateDateColumn()
-    updatedAt: Date;
+  @CreateDateColumn({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
+  createdAt: Date;
 
-    @ManyToOne(() => User, (user) => user.externalConnections, { eager: true })
-    @JoinColumn({ name: 'createdBy', referencedColumnName: 'id' })
-    createdBy: User;
+  @UpdateDateColumn({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
+  updatedAt: Date;
+
+  @Column({ type: 'uuid', nullable: true })
+  createdBy: string | null;
+
+  @ManyToOne(() => User, user => user.externalConnections, {
+    onDelete: 'SET NULL',
+  })
+  @JoinColumn({ name: 'created_by' })
+  creator: User;
 }
