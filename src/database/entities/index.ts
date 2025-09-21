@@ -10,5 +10,5 @@ export * from './workflow-field.entity';
 export * from './program.entity';
 export * from './workflow-configuration.entity';
 export * from './ai-processing-log.entity';
-export * from './external-connections.entity';
 export * from './submission.entity';
+export * from './external-connection.entity';

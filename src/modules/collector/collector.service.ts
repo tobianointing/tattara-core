@@ -117,14 +117,14 @@ export class CollectorService {
       await this.dataSource.transaction(async manager => {
         const aiProcessingLog = manager.create(AiProcessingLog, {
           aiProvider: payload.aiProvider,
-          confidenceScore: String(response.confidence?.score ?? '0.00'),
+          confidenceScore: response.confidence?.score ?? undefined,
           user,
           mappedOutput: response.extracted,
           workflow,
           processingType: payload.processingType,
           formSchema: formSchema,
           completedAt: new Date(),
-          processingTimeMs: response.metrics?.total_seconds ?? 0,
+          processingTimeMs: response.metrics?.total_seconds ?? undefined,
         });
 
         if (payload.files && payload.files.length > 0) {

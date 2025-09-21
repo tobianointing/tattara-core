@@ -13,7 +13,7 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 import { Role, Workflow, AiProcessingLog } from '.';
-import { ExternalConnection } from './external-connections.entity';
+import { ExternalConnection } from './external-connection.entity';
 
 @Entity('users')
 export class User {
@@ -85,7 +85,7 @@ export class User {
   @OneToMany(() => AiProcessingLog, aiProcessingLog => aiProcessingLog.user)
   aiProcessingLogs: AiProcessingLog[];
 
-  @OneToMany(() => ExternalConnection, connection => connection.creator)
+  @OneToMany(() => ExternalConnection, connection => connection.createdBy)
   externalConnections: ExternalConnection[];
 
   @CreateDateColumn()

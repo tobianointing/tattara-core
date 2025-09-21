@@ -8,10 +8,9 @@ import {
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
-import { Workflow } from './workflow.entity';
 import { IntegrationType } from 'src/common/enums';
-import { ExternalConnection } from './external-connections.entity';
 import type { WorkflowConfigurationData } from 'src/common/interfaces';
+import { ExternalConnection, Workflow } from '.';
 
 @Entity('workflow_configurations')
 export class WorkflowConfiguration {

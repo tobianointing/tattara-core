@@ -47,10 +47,26 @@ export class AiProcessingLog {
   @Column({ type: 'jsonb', nullable: true })
   mappedOutput: Record<string, any>;
 
-  @Column('decimal', { precision: 5, scale: 2 })
-  confidenceScore: string;
+  @Column('decimal', {
+    precision: 5,
+    scale: 2,
+    transformer: {
+      to: (val: number) => val,
+      from: (val: string) => parseFloat(val),
+    },
+    nullable: true,
+  })
+  confidenceScore: number;
 
-  @Column({ nullable: true })
+  @Column('decimal', {
+    precision: 5,
+    scale: 2,
+    transformer: {
+      to: (val: number) => val,
+      from: (val: string) => parseFloat(val),
+    },
+    nullable: true,
+  })
   processingTimeMs: number;
 
   @Column({ nullable: true })
