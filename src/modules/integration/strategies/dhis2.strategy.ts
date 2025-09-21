@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
-import { ConnectorStrategy, Dhis2Config } from '../interfaces';
+import { ConnectorStrategy } from '../interfaces';
 import type {
   SchemaProgramResponse,
   SchemaDatasetResponse,
@@ -15,6 +15,7 @@ import type {
   Dhis2SystemInfo,
 } from '../interfaces';
 import { firstValueFrom } from 'rxjs';
+import type { Dhis2ConnectionConfig } from 'src/common/interfaces';
 
 @Injectable()
 export class Dhis2Strategy extends ConnectorStrategy {
@@ -22,7 +23,9 @@ export class Dhis2Strategy extends ConnectorStrategy {
   constructor(private readonly httpService: HttpService) {
     super();
   }
-  async testConnection(config: Dhis2Config): Promise<TestConnectionResponse> {
+  async testConnection(
+    config: Dhis2ConnectionConfig,
+  ): Promise<TestConnectionResponse> {
     try {
       const url = `${config.baseUrl}/api/system/info`;
       const response = await firstValueFrom(
@@ -49,7 +52,7 @@ export class Dhis2Strategy extends ConnectorStrategy {
   }
 
   async fetchSchemas(
-    config: Dhis2Config,
+    config: Dhis2ConnectionConfig,
   ): Promise<SchemaProgramResponse[] | SchemaDatasetResponse[]> {
     try {
       const url = `${config.baseUrl}/schema`;
@@ -76,7 +79,7 @@ export class Dhis2Strategy extends ConnectorStrategy {
   }
 
   async pushData(
-    config: Dhis2Config,
+    config: Dhis2ConnectionConfig,
     payload: EventPayload | DatasetPayload,
   ): Promise<PushDataResponse> {
     try {
@@ -105,7 +108,9 @@ export class Dhis2Strategy extends ConnectorStrategy {
   }
 
   // DHIS2 specific methods
-  async getPrograms(config: Dhis2Config): Promise<FetchProgramsResponse> {
+  async getPrograms(
+    config: Dhis2ConnectionConfig,
+  ): Promise<FetchProgramsResponse> {
     try {
       const url = `${config.baseUrl}/api/programs`;
       const response = await firstValueFrom(
@@ -127,7 +132,9 @@ export class Dhis2Strategy extends ConnectorStrategy {
     }
   }
 
-  async getDatasets(config: Dhis2Config): Promise<FetchDatasetsResponse> {
+  async getDatasets(
+    config: Dhis2ConnectionConfig,
+  ): Promise<FetchDatasetsResponse> {
     try {
       const url = `${config.baseUrl}/api/dataSets`;
       const response = await firstValueFrom(
@@ -147,7 +154,7 @@ export class Dhis2Strategy extends ConnectorStrategy {
     }
   }
 
-  async getOrgUnits(config: Dhis2Config): Promise<OrgUnit[]> {
+  async getOrgUnits(config: Dhis2ConnectionConfig): Promise<OrgUnit[]> {
     try {
       const url = `${config.baseUrl}/api/organisationUnits`;
       const response = await firstValueFrom(

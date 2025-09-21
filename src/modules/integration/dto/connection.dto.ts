@@ -1,10 +1,11 @@
 import { IsString, IsObject, ValidateNested } from 'class-validator';
 import { Type } from 'class-transformer';
-import type { ExternalConnectionConfiguration } from '../interfaces/connection-config.interface';
+import type { ExternalConnectionConfiguration } from 'src/common/interfaces';
+import { IntegrationType } from 'src/common/enums';
 
 export class ConnectionDto {
   @IsString()
-  type!: string;
+  type!: IntegrationType;
 
   @IsObject()
   config!: ExternalConnectionConfiguration;

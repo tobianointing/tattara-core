@@ -17,7 +17,7 @@ import { UserModule } from './modules/user/user.module';
 import { WorkflowModule } from './modules/workflow/workflow.module';
 import { MailModule } from './shared/mail/mail.module';
 import { QueueModule } from './shared/queue/queue.module';
-import { IntegrationModule } from './integration/integration.module';
+import { IntegrationModule } from './modules/integration/integration.module';
 
 @Module({
   imports: [
@@ -31,7 +31,6 @@ import { IntegrationModule } from './integration/integration.module';
     MailModule,
     FileManagerModule,
     ProgramModule,
-    IntegrationModule,
     QueueModule,
     BullModule.forRootAsync({
       imports: [ConfigModule],

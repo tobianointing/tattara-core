@@ -7,9 +7,10 @@ import {
   IntegrationController,
 } from './controllers';
 import { PostgresStrategy, Dhis2Strategy } from './strategies';
+import { HttpModule } from '@nestjs/axios';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([ExternalConnection])],
+  imports: [TypeOrmModule.forFeature([ExternalConnection]), HttpModule],
   providers: [
     IntegrationService,
     ExternalConnectionsService,

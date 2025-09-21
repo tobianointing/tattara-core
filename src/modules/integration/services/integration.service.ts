@@ -3,9 +3,10 @@ import { ConnectorStrategy } from '../interfaces/connector.strategy';
 import { PostgresStrategy } from '../strategies/postgres.strategy';
 import { Dhis2Strategy } from '../strategies/dhis2.strategy';
 import type {
+  Dhis2ConnectionConfig,
   ExternalConnectionConfiguration,
-  Dhis2Config,
-} from '../interfaces/connection-config.interface';
+} from 'src/common/interfaces';
+import { IntegrationType } from 'src/common/enums';
 
 @Injectable()
 export class IntegrationService {
@@ -54,10 +55,10 @@ export class IntegrationService {
   }
 
   async getPrograms(connection: {
-    type: string;
-    config: Dhis2Config;
+    type: IntegrationType;
+    config: Dhis2ConnectionConfig;
   }): Promise<any> {
-    if (connection.type !== 'dhis2') {
+    if (connection.type !== IntegrationType.DHIS2) {
       throw new Error('getPrograms is only supported for DHIS2 connectors');
     }
     return this.dhis2.getPrograms(connection.config);

@@ -40,9 +40,6 @@ export class ExternalConnection {
   @UpdateDateColumn({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
   updatedAt: Date;
 
-  // @Column({ type: 'uuid', nullable: true })
-  // createdBy: string | null;
-
   @ManyToOne(() => User, user => user.externalConnections, {
     onDelete: 'SET NULL',
   })

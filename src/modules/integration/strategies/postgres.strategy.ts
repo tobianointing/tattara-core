@@ -1,6 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConnectorStrategy } from '../interfaces/connector.strategy';
-import type { PostgresConfig } from '../interfaces/connection-config.interface';
 import { Client, QueryResult } from 'pg';
 import type {
   PostgresConnectionResponse,
@@ -12,13 +11,14 @@ import type {
   InsertedRow,
   InsertPayload,
 } from '../interfaces';
+import type { PostgresConnectionConfig } from 'src/common/interfaces';
 
 @Injectable()
 export class PostgresStrategy extends ConnectorStrategy {
   private readonly logger = new Logger(PostgresStrategy.name);
 
   async testConnection(
-    config: PostgresConfig,
+    config: PostgresConnectionConfig,
   ): Promise<PostgresConnectionResponse> {
     const client = new Client({
       host: config.host,
@@ -52,7 +52,7 @@ export class PostgresStrategy extends ConnectorStrategy {
   }
 
   async fetchSchemas(
-    config: PostgresConfig,
+    config: PostgresConnectionConfig,
   ): Promise<PostgresFetchSchemasResponse> {
     const client = new Client({
       host: config.host,
@@ -142,7 +142,7 @@ export class PostgresStrategy extends ConnectorStrategy {
   }
 
   async pushData(
-    config: PostgresConfig,
+    config: PostgresConnectionConfig,
     payload: InsertPayload,
   ): Promise<PostgresPushDataResponse> {
     const client = new Client({

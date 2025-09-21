@@ -1,7 +1,7 @@
-import { Controller, Post, Body, BadRequestException } from '@nestjs/common';
-import { IntegrationService } from '../services/integration.service';
+import { BadRequestException, Body, Controller, Post } from '@nestjs/common';
+import { IntegrationType } from 'src/common/enums';
 import type { ConnectionDto, PushDataDto } from '../dto/connection.dto';
-import type { Dhis2Config } from '../interfaces/connection-config.interface';
+import { IntegrationService } from '../services/integration.service';
 
 @Controller('integration')
 export class IntegrationController {
@@ -25,13 +25,16 @@ export class IntegrationController {
   // DHIS2 specific endpoints
   @Post('dhis2/programs')
   async getPrograms(@Body() connection: ConnectionDto): Promise<any> {
-    if (connection.type !== 'dhis2' || !('baseUrl' in connection.config)) {
+    if (
+      connection.type !== IntegrationType.DHIS2 ||
+      !('baseUrl' in connection.config)
+    ) {
       throw new BadRequestException('Invalid DHIS2 connection configuration');
     }
     // Now safe to cast
     return this.integrationService.getPrograms({
       type: connection.type,
-      config: connection.config as Dhis2Config,
+      config: connection.config,
     });
   }
 }
