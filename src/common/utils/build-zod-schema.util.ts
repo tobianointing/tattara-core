@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { FieldType } from '../enums';
 import { FormField } from '../interfaces';
+import { BadRequestException } from '@nestjs/common';
 
 type FormDefinition = FormField[];
 
@@ -8,7 +9,8 @@ export function buildZodSchema(formDef: FormDefinition) {
   const shape: Record<string, z.ZodTypeAny> = {};
 
   for (const field of formDef) {
-    const { fieldName, isRequired, fieldType, validationRules } = field;
+    const { fieldName, isRequired, fieldType, validationRules, options } =
+      field;
 
     let schema: z.ZodTypeAny;
 
@@ -31,48 +33,67 @@ export function buildZodSchema(formDef: FormDefinition) {
         if (validationRules?.int) schema = z.number().int();
         break;
 
+      // case FieldType.DATE:
+      //   schema = z.date();
+      //   if (validationRules?.before)
+      //     schema = z.date().max(validationRules.before);
+      //   if (validationRules?.after)
+      //     schema = z.date().min(validationRules.after);
+      //   break;
+
+      // case FieldType.DATETIME:
+      //   schema = z.date();
+      //   break;
+
       case FieldType.DATE:
-        schema = z.date();
-        if (validationRules?.before)
-          schema = z.date().max(validationRules.before);
-        if (validationRules?.after)
-          schema = z.date().min(validationRules.after);
+        schema = z
+          .string()
+          .refine(val => !isNaN(Date.parse(val)), {
+            message: 'Invalid date format',
+          })
+          .transform(val => new Date(val));
+
+        if (validationRules?.before) {
+          schema = schema.pipe(z.date().max(validationRules.before));
+        }
+        if (validationRules?.after) {
+          schema = schema.pipe(z.date().min(validationRules.after));
+        }
         break;
 
       case FieldType.DATETIME:
-        schema = z.date();
+        schema = z
+          .string()
+          .refine(val => !isNaN(Date.parse(val)), {
+            message: 'Invalid datetime format',
+          })
+          .transform(val => new Date(val));
         break;
 
       case FieldType.SELECT:
-        if (!validationRules?.options) {
-          throw new Error(
+        if (!options) {
+          throw new BadRequestException(
             `Field "${fieldName}" of type SELECT must have options`,
           );
         }
-        schema = z.enum([...validationRules.options] as [string, ...string[]]);
+        schema = z.enum([...options] as [string, ...string[]]);
         break;
 
       case FieldType.MULTISELECT:
-        if (!validationRules?.options) {
-          throw new Error(
+        if (!options) {
+          throw new BadRequestException(
             `Field "${fieldName}" of type MULTISELECT must have options`,
           );
         }
-        schema = z.array(
-          z.enum([...validationRules.options] as [string, ...string[]]),
-        );
-        if (validationRules.minItems)
+        schema = z.array(z.enum([...options] as [string, ...string[]]));
+        if (validationRules?.minItems)
           schema = z
-            .array(
-              z.enum([...validationRules.options] as [string, ...string[]]),
-            )
-            .min(validationRules.minItems);
-        if (validationRules.maxItems)
+            .array(z.enum([...options] as [string, ...string[]]))
+            .min(validationRules?.minItems);
+        if (validationRules?.maxItems)
           schema = z
-            .array(
-              z.enum([...validationRules.options] as [string, ...string[]]),
-            )
-            .max(validationRules.maxItems);
+            .array(z.enum([...options] as [string, ...string[]]))
+            .max(validationRules?.maxItems);
         break;
 
       case FieldType.BOOLEAN:

@@ -1,46 +1,44 @@
-import { Injectable, Logger } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
-import { ConnectorStrategy } from '../interfaces';
-import type {
-  SchemaProgramResponse,
-  SchemaDatasetResponse,
-  EventPayload,
-  DatasetPayload,
-  OrgUnit,
-  FetchProgramsResponse,
-  FetchDatasetsResponse,
-  TestConnectionResponse,
-  PushDataResponse,
-  Dhis2ImportSummary,
-  Dhis2SystemInfo,
-} from '../interfaces';
+import {
+  Injectable,
+  InternalServerErrorException,
+  Logger,
+} from '@nestjs/common';
 import { firstValueFrom } from 'rxjs';
 import type { Dhis2ConnectionConfig } from 'src/common/interfaces';
+import type {
+  DatasetPayload,
+  Dhis2ImportSummary,
+  Dhis2SystemInfo,
+  EventPayload,
+  FetchDatasetsResponse,
+  FetchProgramsResponse,
+  OrgUnit,
+  SchemaDatasetResponse,
+  SchemaProgramResponse,
+} from '../interfaces';
+import { ConnectorStrategy } from '../interfaces';
 
 @Injectable()
 export class Dhis2Strategy extends ConnectorStrategy {
   private readonly logger = new Logger(Dhis2Strategy.name);
+
   constructor(private readonly httpService: HttpService) {
     super();
   }
-  async testConnection(
-    config: Dhis2ConnectionConfig,
-  ): Promise<TestConnectionResponse> {
+
+  async testConnection(config: Dhis2ConnectionConfig) {
     try {
       const url = `${config.baseUrl}/api/system/info`;
       const response = await firstValueFrom(
         this.httpService.get<Dhis2SystemInfo>(url, {
-          auth: {
-            username: config.username ?? '',
-            password: config.password ?? '',
-          },
+          headers: { Authorization: `Bearer ${config.pat}` },
         }),
       );
-      return {
-        success: true,
-        message: 'Connection successful',
-        data: response.data,
-      };
+      if (response.data) {
+        return true;
+      }
+      return false;
     } catch (error: unknown) {
       if (error instanceof Error) {
         this.logger.error('Connection failed: ' + error.message);
@@ -81,33 +79,30 @@ export class Dhis2Strategy extends ConnectorStrategy {
   async pushData(
     config: Dhis2ConnectionConfig,
     payload: EventPayload | DatasetPayload,
-  ): Promise<PushDataResponse> {
+  ): Promise<Dhis2ImportSummary> {
     try {
       const url = `${config.baseUrl}/api/dataValueSets`;
+
       const response = await firstValueFrom(
         this.httpService.post<Dhis2ImportSummary>(url, payload, {
-          auth: {
-            username: config.username ?? '',
-            password: config.password ?? '',
-          },
+          headers: { Authorization: `Bearer ${config.pat}` },
         }),
       );
-      return {
-        success: true,
-        message: 'Data pushed successfully',
-        data: response.data,
-      };
+      return response.data;
     } catch (error: unknown) {
       if (error instanceof Error) {
         this.logger.error('Failed to push data: ' + error.message);
-        throw new Error('Failed to push data: ' + error.message);
+        throw new InternalServerErrorException(
+          'Failed to push data: ' + error.message,
+        );
       }
       this.logger.error('Failed to push data: ' + String(error));
-      throw new Error('Failed to push data: ' + String(error));
+      throw new InternalServerErrorException(
+        'Failed to push data: ' + String(error),
+      );
     }
   }
 
-  // DHIS2 specific methods
   async getPrograms(
     config: Dhis2ConnectionConfig,
   ): Promise<FetchProgramsResponse> {
@@ -115,10 +110,7 @@ export class Dhis2Strategy extends ConnectorStrategy {
       const url = `${config.baseUrl}/api/programs`;
       const response = await firstValueFrom(
         this.httpService.get<FetchProgramsResponse>(url, {
-          auth: {
-            username: config.username ?? '',
-            password: config.password ?? '',
-          },
+          headers: { Authorization: `Bearer ${config.pat}` },
         }),
       );
       return response.data;
@@ -139,10 +131,7 @@ export class Dhis2Strategy extends ConnectorStrategy {
       const url = `${config.baseUrl}/api/dataSets`;
       const response = await firstValueFrom(
         this.httpService.get<FetchDatasetsResponse>(url, {
-          auth: {
-            username: config.username ?? '',
-            password: config.password ?? '',
-          },
+          headers: { Authorization: `Bearer ${config.pat}` },
         }),
       );
       return response.data;
@@ -159,10 +148,7 @@ export class Dhis2Strategy extends ConnectorStrategy {
       const url = `${config.baseUrl}/api/organisationUnits`;
       const response = await firstValueFrom(
         this.httpService.get<OrgUnit[]>(url, {
-          auth: {
-            username: config.username ?? '',
-            password: config.password ?? '',
-          },
+          headers: { Authorization: `Bearer ${config.pat}` },
         }),
       );
       return response.data;

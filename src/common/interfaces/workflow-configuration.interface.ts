@@ -1,10 +1,13 @@
-export interface Dhis2WorkflowConfig {
-  orgUnitId: string;
-  programId: string;
-  programStageId: string;
-}
+import {
+  EventPayload,
+  DatasetPayload,
+} from 'src/modules/integration/interfaces';
+
+export type Dhis2WorkflowConfig = EventPayload | DatasetPayload;
 
 export interface GenericWorkflowConfig {
+  schema: string;
+  table: string;
   [key: string]: any;
 }
 

@@ -2,6 +2,7 @@ import {
   Body,
   Controller,
   Delete,
+  Get,
   Param,
   ParseUUIDPipe,
   Put,
@@ -13,6 +14,14 @@ import { FieldService } from '../services/field.service';
 @Controller('workflows')
 export class FieldController {
   constructor(private readonly fieldService: FieldService) {}
+
+  @Get('/:workflowId/fields')
+  @Roles('admin')
+  async getWorkflowFields(
+    @Param('workflowId', new ParseUUIDPipe()) workflowId: string,
+  ) {
+    return this.fieldService.getWorkflowFields(workflowId);
+  }
 
   @Put('/:workflowId/fields/upsert')
   @Roles('admin')

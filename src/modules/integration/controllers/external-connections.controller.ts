@@ -7,44 +7,62 @@ import {
   Patch,
   Delete,
 } from '@nestjs/common';
-import { ExternalConnectionsService } from '../services/external-connections.service';
-import { ExternalConnection } from 'src/database/entities';
-import { Roles } from 'src/common/decorators';
+import { ExternalConnectionService } from '../services/external-connections.service';
+import { ExternalConnection, User } from 'src/database/entities';
+import { CurrentUser, Roles } from 'src/common/decorators';
+import { CreateConnectionDto } from '../dto';
 
 @Controller('external-connections')
 export class ExternalConnectionsController {
-  constructor(private readonly service: ExternalConnectionsService) {}
+  constructor(
+    private readonly externalConnService: ExternalConnectionService,
+  ) {}
 
   @Post()
   @Roles('admin')
-  async create(@Body() data: Partial<ExternalConnection>) {
-    return this.service.create(data);
+  async create(
+    @Body() data: CreateConnectionDto,
+    @CurrentUser() currentUser: User,
+  ) {
+    const conn = await this.externalConnService.createByUser(data, currentUser);
+    return {
+      id: conn.id,
+      name: conn.name,
+      type: conn.type,
+      configuration: conn.configuration,
+      isActive: conn.isActive,
+      lastTested: conn.lastTestedAt,
+      testResult: conn.testResult,
+      updatedAt: conn.updatedAt,
+      createdAt: conn.createdAt,
+    };
   }
 
   @Get()
   @Roles('admin')
-  async findAll() {
-    return this.service.findAll();
+  async findAll(@CurrentUser() currentUser: User) {
+    return this.externalConnService.findAll(currentUser);
   }
 
   @Get(':id')
   @Roles('admin')
-  async findOne(@Param('id') id: string) {
-    return this.service.findOne(id);
+  async findOne(@Param('id') id: string, @CurrentUser() currentUser: User) {
+    return this.externalConnService.findOneByUser(id, currentUser);
   }
 
   @Patch(':id')
   @Roles('admin')
   async update(
     @Param('id') id: string,
+    @CurrentUser() currentUser: User,
     @Body() data: Partial<ExternalConnection>,
   ) {
-    return this.service.update(id, data);
+    return this.externalConnService.update(id, currentUser, data);
   }
 
   @Delete(':id')
   @Roles('admin')
-  async remove(@Param('id') id: string) {
-    return this.service.remove(id);
+  async remove(@Param('id') id: string, @CurrentUser() currentUser: User) {
+    return this.externalConnService.remove(id, currentUser);
   }
 }

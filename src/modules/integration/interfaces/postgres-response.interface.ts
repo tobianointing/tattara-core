@@ -56,3 +56,25 @@ export interface InsertPayload {
   value1: string | number; // adjust as needed
   value2: string | number;
 }
+
+export interface PushPayload {
+  schema: string;
+  table: string;
+  values: { column: string; value: string }[];
+}
+
+export interface ColumnMetadata {
+  name: string;
+  type: string;
+  nullable: boolean;
+}
+
+export interface TableMetadata {
+  name: string;
+  columns: ColumnMetadata[];
+}
+
+export interface SchemaMetadata {
+  name: string;
+  tables: TableMetadata[];
+}

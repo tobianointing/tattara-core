@@ -4,8 +4,11 @@ import { ConfigService } from '@nestjs/config';
 import { AppModule } from './app.module';
 import { SeedService } from './database/seeds/seed.service';
 import { TransformInterceptor } from './common/interceptors/transform.interceptor';
-import { GlobalExceptionFilter } from './common/exceptions/http-exception.filter';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
+import {
+  TypeOrmExceptionFilter,
+  GlobalExceptionFilter,
+} from './common/exceptions';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -19,7 +22,11 @@ async function bootstrap() {
   );
 
   app.useGlobalInterceptors(new TransformInterceptor());
-  app.useGlobalFilters(new GlobalExceptionFilter());
+
+  app.useGlobalFilters(
+    new GlobalExceptionFilter(),
+    new TypeOrmExceptionFilter(),
+  );
 
   app.enableCors({
     origin: process.env.FRONTEND_URL || 'http://localhost:3000',

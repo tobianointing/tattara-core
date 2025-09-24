@@ -7,8 +7,9 @@ import {
   UpdateDateColumn,
   ManyToOne,
   JoinColumn,
+  OneToOne,
 } from 'typeorm';
-import { User } from '.';
+import { User, WorkflowConfiguration } from '.';
 import type { ExternalConnectionConfiguration } from 'src/common/interfaces';
 
 @Entity('external_connections')
@@ -16,6 +17,7 @@ export class ExternalConnection {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
+  @Column({ unique: true })
   @Column({ type: 'varchar', length: 255 })
   name: string;
 
@@ -40,8 +42,12 @@ export class ExternalConnection {
   @UpdateDateColumn({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
   updatedAt: Date;
 
+  @OneToOne(() => WorkflowConfiguration, wConfig => wConfig.externalConnection)
+  workflowConfiguration: WorkflowConfiguration;
+
   @ManyToOne(() => User, user => user.externalConnections, {
     onDelete: 'SET NULL',
+    eager: false,
   })
   @JoinColumn({ name: 'created_by' })
   createdBy: User;

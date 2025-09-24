@@ -11,6 +11,7 @@ import type { Queue } from 'bull';
 import * as crypto from 'crypto';
 import { Permission, Role, User } from 'src/database/entities';
 import { DataSource, In, Repository } from 'typeorm';
+import { RegisterDto } from '../auth/dto';
 
 @Injectable()
 export class UserService {
@@ -26,7 +27,7 @@ export class UserService {
     private configService: ConfigService,
   ) {}
 
-  async create(userData: Partial<User>): Promise<User> {
+  async create(userData: Partial<User>, createdBy?: User): Promise<User> {
     const existingUser = await this.userRepository.findOne({
       where: { email: userData.email },
     });
@@ -41,10 +42,66 @@ export class UserService {
 
     const user = this.userRepository.create({
       ...userData,
+      ...(createdBy ? { createdBy: createdBy } : {}),
       roles: userRole ? [userRole] : [],
     });
 
     return this.userRepository.save(user);
+  }
+
+  async registerSingleUser(registerDto: RegisterDto, createdBy: User) {
+    try {
+      const resetToken = crypto.randomBytes(32).toString('hex');
+      const resetExpires = new Date(
+        Date.now() +
+          (this.configService.get<number>(
+            'app.passwordResetExpiresIn',
+          ) as number),
+      );
+
+      const userData = {
+        ...registerDto,
+        createdBy,
+        resetPasswordToken: resetToken,
+        resetPasswordExpires: resetExpires,
+      };
+
+      const user = await this.create(userData);
+
+      const frontendUrl = this.configService.get<string>('app.frontendUrl');
+
+      await this.mailQueue.add(
+        'sendEmail',
+        {
+          to: user.email,
+          subject: 'Reset your password',
+          template: 'bulk-creation-user-password-reset',
+          context: {
+            firstName: user.firstName,
+            email: user.email,
+            appName: this.configService.get<string>('app.name'),
+            resetUrl: `${frontendUrl}/auth/reset-password?token=${resetToken}`,
+          },
+        },
+        {
+          attempts: 3,
+          backoff: 5000,
+          removeOnComplete: true,
+          removeOnFail: false,
+        },
+      );
+
+      return {
+        message: 'Registration successful. Email sent to user.',
+        userId: user.id,
+      };
+    } catch (error) {
+      if (error instanceof ConflictException) {
+        throw error;
+      }
+      console.log('Error occurred during registration:', error);
+      throw new BadRequestException('Registration failed');
+    }
   }
 
   async bulkCreate(createdBy: User, usersData: Partial<User>[]) {
@@ -245,6 +302,22 @@ export class UserService {
     return this.userRepository.find({
       relations: ['roles', 'roles.permissions'],
     });
+  }
+
+  async findAllForLoggedInUserWithPagination(
+    page: number = 1,
+    limit: number = 10,
+    currentUser: User,
+  ): Promise<{ users: User[]; total: number }> {
+    const [users, total] = await this.userRepository.findAndCount({
+      where: { createdBy: { id: currentUser.id } },
+      relations: ['roles', 'roles.permissions'],
+      skip: (page - 1) * limit,
+      take: limit,
+      order: { createdAt: 'DESC' },
+    });
+
+    return { users, total };
   }
 
   async findAllWithPagination(

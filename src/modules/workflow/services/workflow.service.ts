@@ -94,7 +94,12 @@ export class WorkflowService {
   async findWorkflowById(workflowId: string): Promise<Workflow> {
     const workflow = await this.workflowRepository.findOne({
       where: { id: workflowId },
-      relations: ['workflowFields', 'fieldMappings', 'workflowConfigurations'],
+      relations: [
+        'workflowFields',
+        'fieldMappings',
+        'workflowConfigurations',
+        'workflowFields.fieldMappings',
+      ],
     });
 
     if (!workflow) {

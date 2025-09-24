@@ -7,4 +7,5 @@ export type FormField = {
   isRequired: boolean;
   validationRules?: ValidationRules;
   fieldType: FieldType;
+  options?: string[];
 };

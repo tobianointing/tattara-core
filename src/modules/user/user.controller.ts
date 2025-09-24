@@ -1,6 +1,9 @@
 import {
+  Body,
   Controller,
   Get,
+  HttpCode,
+  HttpStatus,
   Param,
   ParseIntPipe,
   Post,
@@ -43,8 +46,8 @@ export class UserController {
     };
   }
 
-  @Get()
-  @Roles('admin')
+  @Get('all')
+  @Roles('super-admin')
   @RequirePermissions('user:read')
   async findAll(
     @Query('page', ParseIntPipe) page: number = 1,
@@ -54,6 +57,40 @@ export class UserController {
       page,
       limit,
     );
+
+    return {
+      users: users.map(user => ({
+        id: user.id,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        isEmailVerified: user.isEmailVerified,
+        roles: user.roles?.map(role => role.name) || [],
+        createdAt: user.createdAt,
+      })),
+      pagination: {
+        page,
+        limit,
+        total,
+        pages: Math.ceil(total / limit),
+      },
+    };
+  }
+
+  @Get()
+  @Roles('admin')
+  @RequirePermissions('user:read')
+  async findAllForLoggedInUser(
+    @Query('page', ParseIntPipe) page: number = 1,
+    @Query('limit', ParseIntPipe) limit: number = 10,
+    @CurrentUser() currentUser: User,
+  ) {
+    const { users, total } =
+      await this.userService.findAllForLoggedInUserWithPagination(
+        page,
+        limit,
+        currentUser,
+      );
 
     return {
       users: users.map(user => ({
@@ -109,6 +146,16 @@ export class UserController {
           action: p.action,
         })) || [],
     }));
+  }
+
+  @Roles('admin')
+  @Post('single-register')
+  @HttpCode(HttpStatus.CREATED)
+  async registerSingleUser(
+    @Body() registerDto: RegisterDto,
+    @CurrentUser() user: User,
+  ) {
+    return this.userService.registerSingleUser(registerDto, user);
   }
 
   @Post('bulk/create')

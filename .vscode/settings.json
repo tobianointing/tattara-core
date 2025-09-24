@@ -2,7 +2,9 @@
   "dbmlERDPreviewer.preferredTheme": "dark",
   "cSpell.words": [
     "DHIS",
+    "genericdb",
     "implemnent",
+    "LRUSIZE",
     "ormconfig",
     "requirepass",
     "tattara",

@@ -1,12 +1,14 @@
 import { Injectable } from '@nestjs/common';
-import { ConnectorStrategy } from '../interfaces/connector.strategy';
-import { PostgresStrategy } from '../strategies/postgres.strategy';
-import { Dhis2Strategy } from '../strategies/dhis2.strategy';
+import { IntegrationType } from 'src/common/enums';
 import type {
   Dhis2ConnectionConfig,
   ExternalConnectionConfiguration,
 } from 'src/common/interfaces';
-import { IntegrationType } from 'src/common/enums';
+import { WorkflowConfiguration } from 'src/database/entities';
+import { ExternalConnectionService } from '.';
+import { ConnectorStrategy } from '../interfaces/connector.strategy';
+import { Dhis2Strategy } from '../strategies/dhis2.strategy';
+import { PostgresStrategy } from '../strategies/postgres.strategy';
 
 @Injectable()
 export class IntegrationService {
@@ -15,6 +17,7 @@ export class IntegrationService {
   constructor(
     private readonly postgres: PostgresStrategy,
     private readonly dhis2: Dhis2Strategy,
+    private readonly externalConnService: ExternalConnectionService,
   ) {
     this.strategies = {
       postgres: this.postgres,
@@ -44,14 +47,16 @@ export class IntegrationService {
     return this.getStrategy(connection.type).fetchSchemas(connection.config);
   }
 
-  async pushData(
-    connection: { type: string; config: ExternalConnectionConfiguration },
-    payload: any,
-  ): Promise<any> {
-    return this.getStrategy(connection.type).pushData(
-      connection.config,
-      payload,
+  async pushData(config: WorkflowConfiguration, payload: unknown) {
+    console.log('config', config);
+    return;
+    const conn = await this.externalConnService.findOne(
+      config.externalConnection.id,
     );
+
+    // console.log('conn', conn);
+
+    return this.getStrategy(config.type).pushData(conn.configuration, payload);
   }
 
   async getPrograms(connection: {

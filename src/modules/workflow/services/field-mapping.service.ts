@@ -5,14 +5,32 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { FieldMapping, Workflow, WorkflowField } from 'src/database/entities';
-import { DataSource, In } from 'typeorm';
+import { DataSource, In, Repository } from 'typeorm';
 import { CreateFieldMappingDto } from '../dto';
+import { InjectRepository } from '@nestjs/typeorm';
 
 @Injectable()
 export class FieldMappingService {
   private readonly logger = new Logger(FieldMappingService.name);
 
-  constructor(private dataSource: DataSource) {}
+  constructor(
+    private dataSource: DataSource,
+    @InjectRepository(Workflow)
+    private workflowRepository: Repository<Workflow>,
+  ) {}
+
+  async getWorkflowFieldMappings(workflowId: string): Promise<FieldMapping[]> {
+    const workflow = await this.workflowRepository.findOne({
+      where: { id: workflowId },
+      relations: ['fieldMappings'],
+    });
+
+    if (!workflow) {
+      throw new NotFoundException(`Workflow with ID '${workflowId}' not found`);
+    }
+
+    return workflow.fieldMappings || [];
+  }
 
   async upsertFieldMappings(
     workflowId: string,

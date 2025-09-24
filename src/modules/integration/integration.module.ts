@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ExternalConnection } from 'src/database/entities';
-import { ExternalConnectionsService, IntegrationService } from './services';
+import { ExternalConnectionService, IntegrationService } from './services';
 import {
   ExternalConnectionsController,
   IntegrationController,
@@ -13,11 +13,11 @@ import { HttpModule } from '@nestjs/axios';
   imports: [TypeOrmModule.forFeature([ExternalConnection]), HttpModule],
   providers: [
     IntegrationService,
-    ExternalConnectionsService,
+    ExternalConnectionService,
     PostgresStrategy,
     Dhis2Strategy,
   ],
   controllers: [IntegrationController, ExternalConnectionsController],
-  exports: [IntegrationService, ExternalConnectionsService],
+  exports: [IntegrationService, ExternalConnectionService],
 })
 export class IntegrationModule {}

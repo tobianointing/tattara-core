@@ -12,6 +12,10 @@ export class UpdateConfigurationDto {
   @IsOptional()
   id?: string;
 
+  @IsUUID()
+  @IsOptional()
+  externalConnectionId?: string;
+
   @IsEnum(IntegrationType)
   @IsOptional()
   type?: IntegrationType;

@@ -11,7 +11,7 @@ import {
   SubmissionStatus,
 } from 'src/common/enums';
 import { ExtractedData } from 'src/common/interfaces';
-import { buildZodSchema } from 'src/common/utils/build-zod-schema.util';
+import { buildZodSchema, formatZodErrors } from 'src/common/utils';
 import {
   AiProcessingLog,
   ExternalConnection,
@@ -25,9 +25,10 @@ import { DataSource, Repository } from 'typeorm';
 import { AiService } from '../ai/ai.service';
 import { ExtractionResponse } from '../ai/interfaces';
 import { FileManagerService } from '../file-manager/file-manager.service';
+import { IntegrationService } from '../integration/services';
 import { WorkflowService } from '../workflow/services/workflow.service';
 import { SubmitDto } from './dto/submit.dto';
-import { ProcessAiPayload } from './interfaces';
+import { ProcessAiPayload, ProcessAiResponse } from './interfaces';
 
 @Injectable()
 export class CollectorService {
@@ -48,6 +49,7 @@ export class CollectorService {
     private readonly submissionRepo: Repository<Submission>,
     private readonly fileManagerService: FileManagerService,
     private readonly dataSource: DataSource,
+    private readonly integrationService: IntegrationService,
   ) {
     fileManagerService.setStrategy('local');
   }
@@ -55,7 +57,7 @@ export class CollectorService {
   async processAi(
     payload: ProcessAiPayload,
     user: User,
-  ): Promise<ExtractionResponse | null> {
+  ): Promise<ProcessAiResponse | null> {
     try {
       const { workflow, schema: formSchema } =
         await this.workflowService.findWorkflowByIdWithSchema(
@@ -114,7 +116,7 @@ export class CollectorService {
         }
       }
 
-      await this.dataSource.transaction(async manager => {
+      return await this.dataSource.transaction(async manager => {
         const aiProcessingLog = manager.create(AiProcessingLog, {
           aiProvider: payload.aiProvider,
           confidenceScore: response.confidence?.score ?? undefined,
@@ -125,7 +127,10 @@ export class CollectorService {
           formSchema: formSchema,
           completedAt: new Date(),
           processingTimeMs: response.metrics?.total_seconds ?? undefined,
+          metadata: response.metrics,
         });
+
+        let savedLog: AiProcessingLog;
 
         if (payload.files && payload.files.length > 0) {
           const uploadedFiles: FileUploads[] = [];
@@ -136,7 +141,7 @@ export class CollectorService {
           }
 
           aiProcessingLog.inputFileIds = uploadedFiles.map(f => f.id);
-          const savedLog = await manager.save(aiProcessingLog);
+          savedLog = await manager.save(aiProcessingLog);
 
           for (const file of uploadedFiles) {
             file.aiProcessingLogId = savedLog.id;
@@ -148,11 +153,14 @@ export class CollectorService {
           if (payload.text) {
             aiProcessingLog.inputText = payload.text;
           }
-          await manager.save(aiProcessingLog);
+          savedLog = await manager.save(aiProcessingLog);
         }
-      });
 
-      return response;
+        return {
+          aiData: response,
+          aiProcessingLogId: savedLog.id,
+        };
+      });
     } catch (error) {
       if (error instanceof Error) {
         this.logger.error(
@@ -178,25 +186,86 @@ export class CollectorService {
           submitData.workflowId,
         );
 
-        const configs = workflow.workflowConfigurations.map(config => {
-          return {
-            type: config.type,
-            configuration: config.configuration,
-            connection: config.externalConnection.configuration,
-          };
-        });
+        if (
+          workflow.workflowConfigurations.length > 0 &&
+          workflow.fieldMappings.length < 1
+        ) {
+          throw new BadRequestException('Field Mappings not set');
+        }
 
-        // const extractedIntegrationData = this.extractIntegrationData(
-        //   workflow.workflowFields,
-        //   submitData.data,
-        // );
+        const extractedIntegrationData = this.extractIntegrationData(
+          workflow.workflowFields,
+          submitData.data,
+        );
 
-        for (const config of configs) {
-          if (config.type === IntegrationType.DHIS2) {
-            //const resDhis =  pushData(IntegrationType.DHIS2,config, extractedIntegrationData[IntegrationType.DHIS2])
-          }
+        console.log(
+          'length',
+          workflow.workflowFields.length,
+          extractedIntegrationData.postgres?.length,
+        );
+
+        // return;
+
+        // console.log('extractedIntegrationData', extractedIntegrationData);
+
+        for (const config of workflow.workflowConfigurations) {
+          let payload: unknown;
+
+          // if (config.type === IntegrationType.DHIS2) {
+          //   if (
+          //     workflow.workflowFields.length !==
+          //     extractedIntegrationData[IntegrationType.DHIS2]?.length
+          //   ) {
+          //     throw new BadRequestException(
+          //       `Field mappings for ${IntegrationType.DHIS2} missing`,
+          //     );
+          //   }
+          //   if ('program' in config.configuration) {
+          //     payload = {
+          //       ...config.configuration,
+          //       eventDate: format(new Date(), 'yyyy-MM-dd'),
+          //       status: 'COMPLETED',
+          //       dataValues: extractedIntegrationData[IntegrationType.DHIS2],
+          //     };
+          //   } else if ('dataset' in config.configuration) {
+          //     payload = {
+          //       ...config.configuration,
+          //       completeDate: format(new Date(), 'yyyy-MM-dd'),
+          //       period: format(new Date(), 'yyyyMM'),
+          //       dataValues: extractedIntegrationData[IntegrationType.DHIS2],
+          //     };
+          //   }
+
+          //   const resDhis = await this.integrationService.pushData(
+          //     config,
+          //     payload,
+          //   );
+
+          //   console.log(resDhis);
+          // }
+
           if (config.type === IntegrationType.POSTGRES) {
-            //const resPostgres pushData(IntegrationType.POSTGRES,config, extractedIntegrationData[IntegrationType.POSTGRES])
+            if (
+              workflow.workflowFields.length !==
+              extractedIntegrationData[IntegrationType.POSTGRES]?.length
+            ) {
+              throw new BadRequestException(
+                `Field mappings for ${IntegrationType.POSTGRES} missing`,
+              );
+            }
+
+            if ('schema' in config.configuration) {
+              payload = {
+                ...config.configuration,
+                dataValues: extractedIntegrationData[IntegrationType.DHIS2],
+              };
+            }
+
+            const resDhis = await this.integrationService.pushData(
+              config,
+              payload,
+            );
+            console.log(resDhis);
           }
         }
 
@@ -252,7 +321,7 @@ export class CollectorService {
         if (m.targetType === IntegrationType.POSTGRES) {
           const entry = {
             table: m.target.table as string,
-            column: m.target.col as string,
+            column: m.target.column as string,
             value,
           };
           extractedData[m.targetType] = [
@@ -272,6 +341,7 @@ export class CollectorService {
       label: f.label,
       isRequired: f.isRequired,
       fieldType: f.fieldType,
+      options: f.options,
       validationRules: f.validationRules,
       fieldMapping: f.fieldMappings,
     }));
@@ -280,12 +350,17 @@ export class CollectorService {
     const result = schema.safeParse(data);
 
     if (!result.success) {
+      const formattedErrors = formatZodErrors(result.error.issues);
+
       this.logger.log(
-        `❌ Validation failed: ${JSON.stringify(result.error.issues)}`,
+        `❌ Validation failed: ${JSON.stringify(formattedErrors, null, 2)}`,
       );
-      throw new BadRequestException(
-        `❌ Validation failed: ${JSON.stringify(result.error.issues)}`,
-      );
+
+      throw new BadRequestException({
+        statusCode: 400,
+        message: 'Validation Failed',
+        errors: formattedErrors,
+      });
     } else {
       this.logger.log(`✅ Valid data: ${JSON.stringify(result.data)}`);
       return true;

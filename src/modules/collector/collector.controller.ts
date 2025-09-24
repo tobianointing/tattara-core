@@ -16,8 +16,8 @@ import { SubmitDto } from './dto/submit.dto';
 export class CollectorController {
   constructor(private readonly collectorService: CollectorService) {}
 
-  @Roles('user')
   @Post('/process-ai')
+  @Roles('user')
   @UseInterceptors(FilesInterceptor('files'))
   async processAi(
     @Body() processAiDto: ProcessAiDto,

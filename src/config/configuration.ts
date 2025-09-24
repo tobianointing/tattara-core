@@ -43,4 +43,6 @@ export default () => ({
     container: process.env.AZURE_BLOB_CONTAINER ?? 'tattara-container',
   },
   ai_base_url: process.env.AI_BASE_URL,
+  cacheTtl: process.env.CACHE_TTL ?? 60000,
+  lruSize: process.env.LRUSIZE ?? 5000,
 });

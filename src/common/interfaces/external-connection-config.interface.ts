@@ -9,8 +9,9 @@ export interface PostgresConnectionConfig {
 
 export interface Dhis2ConnectionConfig {
   baseUrl: string;
-  username: string;
-  password: string;
+  username?: string;
+  password?: string;
+  pat?: string;
   apiVersion?: string;
   ssl?: boolean;
   timeout?: number;

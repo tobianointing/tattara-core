@@ -12,6 +12,7 @@ import { FileManagerModule } from '../file-manager/file-manager.module';
 import { WorkflowModule } from '../workflow/workflow.module';
 import { CollectorController } from './collector.controller';
 import { CollectorService } from './collector.service';
+import { IntegrationModule } from '../integration/integration.module';
 
 @Module({
   imports: [
@@ -25,6 +26,7 @@ import { CollectorService } from './collector.service';
     AiModule,
     FileManagerModule,
     WorkflowModule,
+    IntegrationModule,
   ],
   providers: [CollectorService],
   controllers: [CollectorController],

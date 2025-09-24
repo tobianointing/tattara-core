@@ -85,6 +85,9 @@ export class AiProcessingLog {
   @Column({ nullable: true })
   errorMessage: string;
 
+  @Column({ type: 'jsonb', nullable: true })
+  metadata: Record<string, any>;
+
   @CreateDateColumn()
   createdAt: Date;
 

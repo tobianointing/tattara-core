@@ -67,7 +67,10 @@ export class WorkflowController {
 
   @Post()
   @Roles('admin')
-  async createWorkflow(@Body() createWorkflowDto: CreateWorkflowDto) {
+  async createWorkflow(
+    @Body()
+    createWorkflowDto: CreateWorkflowDto,
+  ) {
     return this.workflowService.createWorkflow(createWorkflowDto);
   }
 

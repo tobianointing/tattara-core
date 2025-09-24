@@ -30,7 +30,11 @@ export class WorkflowConfiguration {
   })
   type: IntegrationType;
 
-  @OneToOne(() => ExternalConnection)
+  @OneToOne(
+    () => ExternalConnection,
+    externalConn => externalConn.workflowConfiguration,
+    { eager: true },
+  )
   @JoinColumn({ name: 'external_connection_id' })
   externalConnection: ExternalConnection;
 

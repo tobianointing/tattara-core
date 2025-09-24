@@ -77,8 +77,17 @@ export class ConfigurationService {
         }
 
         for (const configUpdate of configurationsToUpdate) {
-          const { id, ...updateFields } = configUpdate;
-          await manager.update(WorkflowConfiguration, id, updateFields);
+          const { id, externalConnectionId, ...updateFields } = configUpdate;
+          await manager.update(WorkflowConfiguration, id, {
+            ...updateFields,
+            ...(externalConnectionId
+              ? {
+                  externalConnection: {
+                    id: externalConnectionId,
+                  },
+                }
+              : {}),
+          });
         }
       }
 
@@ -87,6 +96,13 @@ export class ConfigurationService {
           manager.create(WorkflowConfiguration, {
             ...configData,
             workflow,
+            ...(configData.externalConnectionId
+              ? {
+                  externalConnection: {
+                    id: configData.externalConnectionId,
+                  },
+                }
+              : {}),
           }),
         );
         await manager.save(newConfigurations);

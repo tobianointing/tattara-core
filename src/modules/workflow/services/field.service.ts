@@ -16,8 +16,23 @@ export class FieldService {
   constructor(
     @InjectRepository(WorkflowField)
     private workflowFieldRepository: Repository<WorkflowField>,
+    @InjectRepository(Workflow)
+    private workflowRepository: Repository<Workflow>,
     private dataSource: DataSource,
   ) {}
+
+  async getWorkflowFields(workflowId: string): Promise<WorkflowField[]> {
+    const workflow = await this.workflowRepository.findOne({
+      where: { id: workflowId },
+      relations: ['workflowFields'],
+    });
+
+    if (!workflow) {
+      throw new NotFoundException(`Workflow with ID '${workflowId}' not found`);
+    }
+
+    return workflow.workflowFields || [];
+  }
 
   async upsertWorkflowFields(
     workflowId: string,

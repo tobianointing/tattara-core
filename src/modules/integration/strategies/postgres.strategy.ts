@@ -1,191 +1,220 @@
-import { Injectable, Logger } from '@nestjs/common';
-import { ConnectorStrategy } from '../interfaces/connector.strategy';
-import { Client, QueryResult } from 'pg';
-import type {
-  PostgresConnectionResponse,
-  PostgresFetchSchemasResponse,
-  PostgresPushDataResponse,
-  SchemaRow,
-  TableRow,
-  ColumnRow,
-  InsertedRow,
-  InsertPayload,
-} from '../interfaces';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import {
+  BadRequestException,
+  ConflictException,
+  Inject,
+  Injectable,
+  InternalServerErrorException,
+  Logger,
+} from '@nestjs/common';
+import type { Cache } from 'cache-manager';
+import knex, { Knex } from 'knex';
+import { DatabaseError } from 'pg';
 import type { PostgresConnectionConfig } from 'src/common/interfaces';
+import type { PushPayload, SchemaMetadata, TableMetadata } from '../interfaces';
+import { ConnectorStrategy } from '../interfaces/connector.strategy';
 
 @Injectable()
 export class PostgresStrategy extends ConnectorStrategy {
   private readonly logger = new Logger(PostgresStrategy.name);
 
+  constructor(@Inject(CACHE_MANAGER) private cache: Cache) {
+    super();
+  }
+
   async testConnection(
-    config: PostgresConnectionConfig,
-  ): Promise<PostgresConnectionResponse> {
-    const client = new Client({
-      host: config.host,
-      port: config.port,
-      user: config.username,
-      password: config.password,
-      database: config.database,
+    connectionConfig: PostgresConnectionConfig,
+  ): Promise<boolean> {
+    const db: Knex = knex({
+      client: 'pg',
+      connection: {
+        host: connectionConfig.host,
+        port: connectionConfig.port,
+        user: connectionConfig.username,
+        password: connectionConfig.password,
+        database: connectionConfig.database,
+      },
     });
 
     try {
-      await client.connect();
-      return { success: true, message: 'Connection successful' };
-    } catch (error: unknown) {
-      if (error instanceof Error) {
-        this.logger.error('Connection failed: ' + error.message);
-        return {
-          success: false,
-          message: 'Connection failed',
-          error: error.message,
-        };
+      this.logger.log(
+        `Testing connection to ${connectionConfig.host}:${connectionConfig.port}/${connectionConfig.database}`,
+      );
+
+      await db.raw('SELECT 1');
+
+      this.logger.log('Connection successful');
+      return true;
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        this.logger.error(`Connection failed: ${err.message}`, err.stack);
+        throw new BadRequestException(`Connection failed: ${err.message}`);
       }
-      this.logger.error('Connection failed: ' + String(error));
-      return {
-        success: false,
-        message: 'Connection failed',
-        error: String(error),
-      };
+      this.logger.error(`Connection failed: ${String(err)}`);
+      throw new BadRequestException(`Connection failed: ${String(err)}`);
     } finally {
-      await client.end();
+      await db.destroy();
     }
   }
 
   async fetchSchemas(
     config: PostgresConnectionConfig,
-  ): Promise<PostgresFetchSchemasResponse> {
-    const client = new Client({
-      host: config.host,
-      port: config.port,
-      user: config.username,
-      password: config.password,
-      database: config.database,
+  ): Promise<SchemaMetadata[]> {
+    const cacheKey = `schemas:${config.host}:${config.port}:${config.database}`;
+
+    const cached = await this.cache.get<SchemaMetadata[]>(cacheKey);
+    if (cached) {
+      this.logger.log(`Cache hit for ${cacheKey}`);
+      return cached;
+    }
+
+    const db: Knex = knex({
+      client: 'pg',
+      connection: {
+        host: config.host,
+        port: config.port,
+        user: config.username,
+        password: config.password,
+        database: config.database,
+      },
     });
 
-    // Define a strict type for schemas
-    type SchemaMap = {
-      [schemaName: string]: {
-        tables: {
-          [tableName: string]: {
-            columns: { name: string; type: string; nullable: boolean }[];
-          };
-        };
-      };
-    };
-
     try {
-      await client.connect();
-      const result: QueryResult<SchemaRow> = await client.query<SchemaRow>(`
-                SELECT schema_name
-                FROM information_schema.schemata
-                WHERE schema_name NOT IN ('information_schema', 'pg_catalog', 'pg_toast')
-                ORDER BY schema_name;
-            `);
-      const schemas: SchemaMap = {};
+      this.logger.log('Fetching schemas, tables, and columns metadata...');
 
-      for (const row of result.rows) {
-        const schemaName = row.schema_name;
-
-        const tablesResult: QueryResult<TableRow> =
-          await client.query<TableRow>(
-            `
-                    SELECT table_name
-                    FROM information_schema.tables
-                    WHERE table_schema = $1
-                    ORDER BY table_name;
-                `,
-            [schemaName],
-          );
-        schemas[schemaName] = { tables: {} };
-
-        for (const tableRow of tablesResult.rows) {
-          const tableName: string = tableRow.table_name;
-
-          const columnsResult: QueryResult<ColumnRow> =
-            await client.query<ColumnRow>(
-              `
-                        SELECT column_name, data_type, is_nullable
-                        FROM information_schema.columns
-                        WHERE table_schema = $1 AND table_name = $2
-                        ORDER BY ordinal_position;
-                    `,
-              [schemaName, tableName],
-            );
-          schemas[schemaName].tables[tableName] = {
-            columns: columnsResult.rows.map((col: ColumnRow) => ({
-              name: col.column_name,
-              type: col.data_type,
-              nullable: col.is_nullable === 'YES',
-            })),
-          };
-        }
-      }
-      return { success: true, data: schemas };
-    } catch (error: unknown) {
-      if (error instanceof Error) {
-        this.logger.error('Failed to fetch schemas: ' + error.message);
-        return {
-          success: false,
-          message: 'Failed to fetch schemas',
-          error: error.message,
-        };
-      }
-      this.logger.error('Failed to fetch schemas: ' + String(error));
-      return {
-        success: false,
-        message: 'Failed to fetch schemas',
-        error: String(error),
+      // Row types
+      type SchemaRow = { schema_name: string };
+      type TableRow = { table_name: string };
+      type ColumnRow = {
+        column_name: string;
+        data_type: string;
+        is_nullable: string;
       };
+
+      // 2. Get all schemas
+      const schemaRows: SchemaRow[] = await db
+        .select<SchemaRow[]>('schema_name')
+        .from('information_schema.schemata')
+        .whereNotIn('schema_name', ['pg_catalog', 'information_schema']);
+
+      // 3. Fetch schemas + tables + columns in parallel
+      const schemas: SchemaMetadata[] = await Promise.all(
+        schemaRows.map(async ({ schema_name }) => {
+          const tableRows: TableRow[] = await db
+            .select<TableRow[]>('table_name')
+            .from('information_schema.tables')
+            .where('table_schema', schema_name);
+
+          const tables: TableMetadata[] = await Promise.all(
+            tableRows.map(async ({ table_name }) => {
+              const columnRows: ColumnRow[] = await db
+                .select<ColumnRow[]>('column_name', 'data_type', 'is_nullable')
+                .from('information_schema.columns')
+                .where({ table_schema: schema_name, table_name });
+
+              return {
+                name: table_name,
+                columns: columnRows.map(col => ({
+                  name: col.column_name,
+                  type: col.data_type,
+                  nullable: col.is_nullable === 'YES',
+                })),
+              };
+            }),
+          );
+
+          return { name: schema_name, tables };
+        }),
+      );
+
+      this.logger.log(`Fetched ${schemas.length} schemas successfully`);
+
+      await this.cache.set(cacheKey, schemas, 300_000);
+
+      return schemas;
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        this.logger.error(
+          `Error fetching schema metadata: ${err.message}`,
+          err.stack,
+        );
+      } else {
+        this.logger.error(
+          `Unknown error fetching schema metadata: ${String(err)}`,
+        );
+      }
+      throw new InternalServerErrorException('Failed to fetch schema metadata');
     } finally {
-      await client.end();
+      await db.destroy();
     }
   }
 
-  async pushData(
-    config: PostgresConnectionConfig,
-    payload: InsertPayload,
-  ): Promise<PostgresPushDataResponse> {
-    const client = new Client({
-      host: config.host,
-      port: config.port,
-      user: config.username,
-      password: config.password,
-      database: config.database,
+  async pushData<R = Record<string, any>>(
+    connectionConfig: PostgresConnectionConfig,
+    payload: PushPayload,
+  ): Promise<R[]> {
+    const db = knex({
+      client: 'pg',
+      connection: {
+        host: connectionConfig.host,
+        port: connectionConfig.port,
+        user: connectionConfig.username,
+        password: connectionConfig.password,
+        database: connectionConfig.database,
+      },
     });
 
+    const { schema, table, values } = payload;
+
+    const insertObj = values.reduce(
+      (acc, v) => ({ ...acc, [v.column]: v.value }),
+      {},
+    );
+
     try {
-      await client.connect();
-      // Assuming payload contains the necessary data to insert/update
-      const result = await client.query<InsertedRow>(
-        `
-                INSERT INTO your_table_name (column1, column2)
-                VALUES ($1, $2)
-                RETURNING *
-            `,
-        [payload.value1, payload.value2],
-      );
-      return {
-        success: true,
-        message: 'Data pushed successfully',
-        data: result.rows[0],
-      };
-    } catch (error: unknown) {
-      if (error instanceof Error) {
-        this.logger.error('Failed to push data: ' + error.message);
-        return {
-          success: false,
-          message: 'Failed to push data',
-          error: error.message,
-        };
+      const result = await db
+        .withSchema(schema)
+        .table(table)
+        .insert(insertObj)
+        .returning('*');
+
+      return result as R[];
+    } catch (err: any) {
+      if (this.isDatabaseError(err)) {
+        this.logger.error(
+          `DB error inserting into ${schema}.${table}: ${err.code} - ${err.message}`,
+          err.stack,
+        );
+
+        switch (err.code) {
+          case '23505':
+            throw new ConflictException(
+              'Duplicate key value violates unique constraint',
+            );
+          case '23503':
+            throw new BadRequestException('Invalid foreign key reference');
+          case '42P01':
+            throw new BadRequestException(
+              `Table "${schema}.${table}" does not exist`,
+            );
+          default:
+            throw new InternalServerErrorException(err.message);
+        }
       }
-      this.logger.error('Failed to push data: ' + String(error));
-      return {
-        success: false,
-        message: 'Failed to push data',
-        error: String(error),
-      };
+
+      this.logger.error(`Unexpected error: ${String(err)}`);
+      throw new InternalServerErrorException('Unexpected database error');
     } finally {
-      await client.end();
+      await db.destroy();
     }
+  }
+
+  private isDatabaseError(err: unknown): err is DatabaseError {
+    return (
+      typeof err === 'object' &&
+      err !== null &&
+      'code' in err &&
+      'message' in err
+    );
   }
 }
