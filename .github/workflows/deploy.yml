@@ -38,5 +38,5 @@ jobs:
           key: ${{ secrets.VPS_SSH_KEY }}
           script: |
             cd /home/${{ secrets.VPS_USER }}/tattara-api/docker
-            docker compose pull app
-            docker compose up -d --remove-orphans
+            docker compose --env-file ../.env pull app
+            docker compose --env-file ../.env up -d --remove-orphans
