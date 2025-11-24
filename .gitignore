@@ -58,3 +58,9 @@ report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
 
 
 /uploads
+
+# Docker volumes and certificates
+docker/certs/
+docker/.env
+docker/postgres_data/
+docker/redis_data/
