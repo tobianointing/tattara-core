@@ -40,7 +40,7 @@ export default () => ({
   },
   azure: {
     connectionString: process.env.AZURE_STORAGE_CONNECTION_STRING ?? '',
-    container: process.env.AZURE_BLOB_CONTAINER ?? 'tattara-container',
+    container: process.env.AZURE_BLOB_CONTAINER ?? 'Harvest-container',
   },
   ai_base_url: process.env.AI_BASE_URL,
   cacheTtl: process.env.CACHE_TTL ?? 60000,

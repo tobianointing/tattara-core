@@ -1,8 +1,8 @@
 openapi: 3.0.3
 info:
-  title: Tattara DSN AI Data Collection App API
+  title: Harvest DSN AI Data Collection App API
   description: |
-    Backend API for the Tattara DSN AI Data Collection App.
+    Backend API for the Harvest DSN AI Data Collection App.
     Features:
       - JWT Authentication with RBAC (Roles & Permissions)
       - Program & Workflow management
@@ -11,7 +11,7 @@ info:
       - Offline sync & comprehensive audit logging
   version: 2.0.0
 servers:
-  - url: https://api.tattara.app/v1
+  - url: https://api.Harvest.app/v1
 tags:
   - name: Authentication
   - name: User Management

@@ -82,7 +82,7 @@ import { RequestContextModule } from './shared/request-context/request-context.m
       adapter: ExpressAdapter,
       middleware: basicAuth({
         challenge: true,
-        users: { admin: 'tattara' },
+        users: { admin: 'Harvest' },
       }),
     }),
     WorkflowModule,

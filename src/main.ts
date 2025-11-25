@@ -48,10 +48,10 @@ async function bootstrap() {
   }
 
   const config = new DocumentBuilder()
-    .setTitle('Tattara DSN AI Data Collection App API')
+    .setTitle('Harvest DSN AI Data Collection App API')
     .setDescription(
       `### 📋 Overview  
-Backend API for the Tattara DSN AI Data Collection App.
+Backend API for the Harvest DSN AI Data Collection App.
 
 ### 🚀 Features  
 - 🔐 JWT Authentication with RBAC (Roles & Permissions) 

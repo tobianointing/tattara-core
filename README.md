@@ -1,8 +1,8 @@
-# Tattara API
+# Harvest API
 
 > AI-Powered Data Collection Backend for DHIS2 and Generic Database Integration
 
-Tattara is a NestJS-based API that powers an AI-driven data collection platform designed to streamline and enhance data entry, validation, and integration using voice recognition and OCR capabilities. The system supports both DHIS2 integration and standalone database operations.
+Harvest is a NestJS-based API that powers an AI-driven data collection platform designed to streamline and enhance data entry, validation, and integration using voice recognition and OCR capabilities. The system supports both DHIS2 integration and standalone database operations.
 
 ## 🚀 Features
 
@@ -52,7 +52,7 @@ Tattara is a NestJS-based API that powers an AI-driven data collection platform 
 
 ```bash
 git clone <repository-url>
-cd tattara-api
+cd Harvest-api
 ```
 
 ### 2. Install Dependencies
